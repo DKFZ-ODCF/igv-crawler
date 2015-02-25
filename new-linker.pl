@@ -106,7 +106,7 @@ sub makeAllFileSystemLinks {
   my $link_target_dir = shift;
   my %files_per_patientId = @_;
 
-  print "creating links in $link_target_dir\n"
+  print "creating links in $link_target_dir\n";
 
   foreach my $patientId (keys %files_per_patientId) {
     my $newDir = makeDirectoryFor($link_target_dir, $patientId);
@@ -188,10 +188,11 @@ sub makeHtmlPage {
       }
     } sort keys %bambai_file_index ]; 
 
+  my $timestamp = localtime;
   # insert everything into the template
   $template->param(
     project_name  => $project_name,
-    timestamp     => localtime,
+    timestamp     => $timestamp,
     file_host_dir => $file_host_dir,
     patients      => $formatted_patients
   );
