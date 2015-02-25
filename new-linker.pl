@@ -54,8 +54,14 @@ sub main {
   # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
   finddepth(\&findFilter, $dir_to_scan);
 
-  # map { print "$_ : \n   ", join(",\n   ", @{$bambai_file_index{$_}}), "\n\n" } sort keys %bambai_file_index ;
+  clearOldLinksIn($output_dir);
+
+  # make desired LSDF files accessible from www-directory
   makeAllFileSystemLinks($output_dir, %bambai_file_index);
+
+  # remove clutter: clear out the index files so they won't be explicitly listed in the HTML
+  # IGV will figure out the links itself from the corresponding filename
+  filterIndexFiles(%bambai_file_index);
 
   makeHtmlPage($output_index, $output_link_www_dir, $project_name, %bambai_file_index);
 }
@@ -81,25 +87,9 @@ sub addToIndex {
   push @{ $bambai_file_index{$patientId} }, $file;
 }
 
-sub makeAllFileSystemLinks {
-  my $link_target_dir = shift;
-  my %files_per_patientId = @_;
-
-  clearOldLinksIn($link_target_dir);
-
-  foreach my $patientId (keys %files_per_patientId) {
-    my $newDir = makeDirectoryFor($link_target_dir, $patientId);
-    foreach my $originalFile (@{ $files_per_patientId{$patientId} }) {
-      my $filename = getFileNameFor($originalFile);
-      my $newPath = catfile($newDir, $filename);
-      #print "$originalFile ---> $newPath \n";
-      symlink $originalFile, $newPath;
-    } 
-  }
-}
-
 # recursively clears all links from a directory, and then all empty dirs.
 # This should normally clear a link-dir made by this script, but nothing else.
+# sanity-checks the provided directory to match /public-otp-files/*/links, to avoid "find -delete" mishaps
 sub clearOldLinksIn {
   my $dir_to_clear = shift;
   # sanity, don't let this work on directories that aren't ours
@@ -110,6 +100,23 @@ sub clearOldLinksIn {
   system( "find -P $dir_to_clear -mount -depth -type l  -delete" );
   # clear out all directories that are now empty (or contain only empty directories -> '-p')
   system( "find -P $dir_to_clear -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
+}
+
+sub makeAllFileSystemLinks {
+  my $link_target_dir = shift;
+  my %files_per_patientId = @_;
+
+  print "creating links in $link_target_dir\n"
+
+  foreach my $patientId (keys %files_per_patientId) {
+    my $newDir = makeDirectoryFor($link_target_dir, $patientId);
+    foreach my $originalFile (@{ $files_per_patientId{$patientId} }) {
+      my $filename = getFileNameFor($originalFile);
+      my $newPath = catfile($newDir, $filename);
+      #print "$originalFile ---> $newPath \n";
+      symlink $originalFile, $newPath;
+    } 
+  }
 }
 
 sub makeDirectoryFor {
@@ -128,6 +135,18 @@ sub getFileNameFor {
   return $filename;
 }
 
+sub filterIndexFiles {
+  my %files_per_patientId = @_;
+
+  foreach my $patientId (keys %files_per_patientId) {
+    my @to_keep = grep { 
+      not ($_ =~ /\.bai$/)  # throw out bam-index files (ending with .bai)
+    } @{ $files_per_patientId{$patientId}};
+    
+    @{ $bambai_file_index{$patientId} } = @to_keep;
+  }
+}
+
 sub makeHtmlPage {
   my $output_file = shift;
   my $file_host_dir = shift;
@@ -138,12 +157,11 @@ sub makeHtmlPage {
   my $html = do { local $/; <DATA> };
   my $template = HTML::Template->new(
    scalarref         => \$html,
-#   loop_context_vars => 1,
-   global_vars       => 1
+   global_vars       => 1 # needed to make outer-var file_host_dir visible inside loops
   );
 
   # prepare datstructures to insert into template
-  my $timestamp = localtime;
+  #
   # sorry for the next unreadable part, explanation:
   # it creates the nested structure for the list-of-patients-with-list-of-their-files 
   # formatted as a (nested) list-of-maps, for HTML::Template
@@ -151,8 +169,8 @@ sub makeHtmlPage {
   #  {
   #    patient_id => "patient_1",
   #    linked_files => [
-  #      { filename => "testFile1" },
-  #      { filename => "testFile2" },
+  #      { filename => "file1" },
+  #      { filename => "file2" },
   #      ...
   #    ]
   #  },
@@ -170,11 +188,10 @@ sub makeHtmlPage {
       }
     } sort keys %bambai_file_index ]; 
 
-#  $html_contents .= addPatientSection($bam_host_dir, %files_per_patientId);
   # insert everything into the template
   $template->param(
     project_name  => $project_name,
-    timestamp     => $timestamp,
+    timestamp     => localtime,
     file_host_dir => $file_host_dir,
     patients      => $formatted_patients
   );
@@ -183,69 +200,14 @@ sub makeHtmlPage {
   writeContentsToFile($template->output(), $output_file);
 }
 
-sub addPatientSection {
-  my $bam_host_dir = shift;
-  my %files_per_patientId = @_;
-
-  my $stringbuffer = '';
-
-  foreach my $patientId (sort keys %files_per_patientId) {
-    $stringbuffer .= openListFor($patientId);
-    
-    my %files_for_current_patientId = map { $_ => 1 } @{ $files_per_patientId{$patientId} };
-    foreach my $file (sort %files_for_current_patientId) {
-      # If it's a bam-index (bai) file, skip, bai's are checked together with their .bam counterparts in the .bam-half of iterations
-      next if $file =~ /\.bai$/;
-      
-      # skip+log if this bamfile has no accompanying .bai
-      # IGV needs a same-named bam-index file in the same location to work properly
-      # The index-file contains byte-offsets for base-ranges in the bam, allowing
-      # IGV to view ranges without downloading the entire (multi-gig) .bam
-      my $expected_bai = $file;
-      $expected_bai =~ s/\.bam$/\.bai/;
-      if (exists($files_for_current_patientId{$expected_bai})) {
-        $stringbuffer .= makeIgvBamLinkFor($file, $bam_host_dir, $patientId);
-      }
-    }
-
-    $stringbuffer .= closeList();
-  }
-  return $stringbuffer;
-}
-
-sub openListFor {
-  my $patientId = shift;
-
-  return "
-    <h2>$patientId</h2>
-      <ul>";
-}
-
-sub closeList {
-  return "
-      </ul>
-    ";
-}
-
-sub makeIgvBamLinkFor {
-  my $bamfile = shift;
-  my $bam_host_dir = shift;
-  my $patientId = shift;
-  my $filename = getFileNameFor($bamfile);
-  
-  return "
-        <li><a href=\"http://localhost:60151/load?file=$bam_host_dir/$patientId/$filename&genome=1kg_v37\">$filename</a></li>";
-}
-
 sub writeContentsToFile {
   my $contents = shift;
   my $filename = shift;
 
-  #print "writing stuff to $filename\n";
+  print "writing contents to $filename\n";
   open (FILE, "> $filename") || die "problem opening $filename\n";
   print FILE $contents;
   close (FILE);
-  #print $contents;
 }
 
 __DATA__
