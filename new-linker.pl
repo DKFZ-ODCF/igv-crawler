@@ -11,6 +11,7 @@ use warnings;
 use File::Find;
 use File::Path;
 use File::Spec::Functions;
+use HTML::Template;
 
 
 ####################################################################################
@@ -21,11 +22,11 @@ my $project_name = 'DEEP';
 # Which directory to scan for bam files
 my $input_dir_to_scan = '/icgc/dkfzlsdf/project/DEEP/results/alignments';
 # where to create the symlinks to the discovered bamfiles
-my $output_link_target_dir = '/public-otp-files/deep/links';
+my $output_link_target_dir = '/public-otp-files/demo/links';
 # where $output_link_target_dir is visible for internet access, no trailing slash!
 my $output_link_www_dir = 'https://otpfiles.dkfz.de/deep/links';
 # where to write the shiny overview page
-my $output_index_page = '/public-otp-files/deep/deep.html';
+my $output_index_page = '/public-otp-files/demo/test.html';
 
 # Function to derive a patientID from a filename
 # Only thing that should normally be adapted to include a new project
@@ -101,12 +102,13 @@ sub makeAllFileSystemLinks {
 sub clearOldLinksIn {
   my $dir_to_clear = shift;
   # sanity, don't let this work on directories that aren't ours
-  die "paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links\//;
+  die "paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/;
 
+  print "Clearing out links and empty directories in $dir_to_clear\n";
   # delete all symlinks in our directory
   system( "find -P $dir_to_clear -mount -depth -type l  -delete" );
   # clear out all directories that are now empty (or contain only empty directories -> '-p')
-  system( "find -P $dir_to_clear -mount -depth -type d  -exec rmdir -p {} +" );
+  system( "find -P $dir_to_clear -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
 }
 
 sub makeDirectoryFor {
@@ -127,45 +129,47 @@ sub getFileNameFor {
 
 sub makeHtmlPage {
   my $output_file = shift;
-  my $bam_host_dir = shift;
+  my $file_host_dir = shift;
   my $project_name = shift;
   my %files_per_patientId = @_;
 
-  # start HTML page (with ugly hardcoded snippet :-P )
-  my $html_contents = "<html>
-<head>
-  <title>.bam files for $project_name</title>
-</head>
-<body>
-<p>
-The .bam files for the $project_name project have been made available online here over a secured connection.<br/>
-Below are some clickable links that will add said files into a running IGV session.<br/>
-Learn more about this functionality at the IGV-website under <a target=\"blank\" href=\"https://www.broadinstitute.org/software/igv/ControlIGV\">controlling IGV</a>
-</p>
-<p>
-<strong>NOTE! the links below only work if</strong>
-<ol>
-<li>IGV is already running</li>
-<li>you enabled port-control (in view > preferences > advanced > enable port > port 60151)</li>
-<li>the reference genome is available (genomes > load genome from server > add \"Human&nbsp;(1kg&nbsp;b37&nbsp;+&nbsp;decoy)\", also known as \"1kg_v37\"<br/>
-(do this before loading files, or all positions will show up as mutated)<br/>
-This is only needed once, after IGV learns about this reference-genome, it will recognise it automatically in the links below.</li>
-</ol>
-</p>
+  # Get the HTML template
+  my $html = do { local $/; <DATA> };
+  my $template = HTML::Template->new(
+   scalarref         => \$html,
+   loop_context_vars => 1,
+  );
 
-<h1>Patient Information</h1>
-";
-  $html_contents .= addPatientSection($bam_host_dir, %files_per_patientId);
+  # prepare datstructures to insert into template
+  my $timestamp = localtime;
+  my $formatted_patients = [
+    {
+      patient_id => "test_patient_1",
+      linked_files => [
+        { filename => "testFile1" },
+        { filename => "testFile2" }
+      ]
+    },
+    {
+      patient_id => "test_patient_2",
+      linked_files => [
+        { filename => "testFile3" },
+        { filename => "testFile4" }
+      ]
+    }
+  ];
 
-  #close html page
-  my $now = localtime;
-  $html_contents .= "
-<p>last updated: $now</p>
-</body>
-</html>
-";
+#  $html_contents .= addPatientSection($bam_host_dir, %files_per_patientId);
+  # insert everything into the template
+  $template->param(
+    project_name  => $project_name,
+    timestamp     => $timestamp,
+    file_host_dir => $file_host_dir,
+    patients      => $formatted_patients
+  );
 
-  writeContentsToFile($html_contents, $output_file);
+
+  writeContentsToFile($template->output(), $output_file);
 }
 
 sub addPatientSection {
@@ -232,3 +236,45 @@ sub writeContentsToFile {
   close (FILE);
   #print $contents;
 }
+
+__DATA__
+<html>
+<head>
+  <title>IGV files for <!-- TMPL_VAR NAME=project_name --></title>
+</head>
+
+<body>
+<p>
+The IGV-relevant files for the <!-- TMPL_VAR NAME=project_name --> project have been made available online here over a secured connection.<br/>
+Below are some clickable links that will add said files into a running IGV session.<br/>
+Learn more about this functionality at the IGV-website under <a target="blank" href="https://www.broadinstitute.org/software/igv/ControlIGV">controlling IGV</a>
+</p>
+<p>
+<strong>NOTE! the links below only work if</strong>
+<ol>
+<li>IGV is already running</li>
+<li>you enabled port-control (in view > preferences > advanced > enable port > port 60151)</li>
+<li>the reference genome is available (genomes > load genome from server > add "Human&nbsp;(1kg&nbsp;b37&nbsp;+&nbsp;decoy)", also known as "1kg_v37"<br/>
+(do this before loading files, or all positions will show up as mutated)<br/>
+This is only needed once, after IGV learns about this reference-genome, it will recognise it automatically in the links below.</li>
+</ol>
+</p>
+<p>last updated: <!-- TMPL_VAR NAME=timestamp -->, a service by the eilslabs data management group</p>
+
+<h1>Patient Information</h1>
+<!-- TMPL_LOOP NAME=patients -->
+  <h2><!-- TMPL_VAR NAME=patient_id --></h2>
+  <ul>
+    <!-- TMPL_LOOP NAME=linked_files -->
+      <li>
+        <a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=filename -->&genome=1kg_v37">
+          <!-- TMPL_VAR NAME=filename -->
+        </a>
+      </li>
+    <!-- /TMPL_LOOP -->
+  </ul>
+<!-- /TMPL_LOOP -->
+
+</body>
+</html>
+
