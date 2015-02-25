@@ -51,9 +51,10 @@ sub main {
   
   print "Listing bamfiles in $dir_to_scan, making links in $output_dir, writing index file to $output_index\n";
 
+  # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
   finddepth(\&findFilter, $dir_to_scan);
 
-  # map {print "$_ : \n   ", join(",\n   ", @{$bambai_file_index{$_}}), "\n\n"} sort keys %bambai_file_index ;
+  # map { print "$_ : \n   ", join(",\n   ", @{$bambai_file_index{$_}}), "\n\n" } sort keys %bambai_file_index ;
   makeAllFileSystemLinks($output_dir, %bambai_file_index);
 
   makeHtmlPage($output_index, $output_link_www_dir, $project_name, %bambai_file_index);
@@ -61,7 +62,7 @@ sub main {
 
 sub findFilter {
   my $filename = $File::Find::name;
-  return if -d $filename;                  # skip directories
+  return if -d $filename;                     # skip directories
   return unless $filename =~ /(.*)\.ba[im]$/; # skip files that're not a bamfile or a bam-index
 
   addToIndex($filename);
@@ -73,7 +74,7 @@ sub addToIndex {
   # extract the patient ID from the identifier
   my $patientId = derivePatientIdFrom($file);
   
-#  print "$patientId => $file\n";
+  # print "found file for $patientId: $file\n";
   
   # append the file-path to our list of files-per-patient
   $bambai_file_index{$patientId} = [] unless $bambai_file_index{$patientId};
@@ -137,27 +138,37 @@ sub makeHtmlPage {
   my $html = do { local $/; <DATA> };
   my $template = HTML::Template->new(
    scalarref         => \$html,
-   loop_context_vars => 1,
+#   loop_context_vars => 1,
+   global_vars       => 1
   );
 
   # prepare datstructures to insert into template
   my $timestamp = localtime;
+  # sorry for the next unreadable part, explanation:
+  # it creates the nested structure for the list-of-patients-with-list-of-their-files 
+  # formatted as a (nested) list-of-maps, for HTML::Template
+  # [
+  #  {
+  #    patient_id => "patient_1",
+  #    linked_files => [
+  #      { filename => "testFile1" },
+  #      { filename => "testFile2" },
+  #      ...
+  #    ]
+  #  },
+  # ...]
+  #
   my $formatted_patients = [
-    {
-      patient_id => "test_patient_1",
-      linked_files => [
-        { filename => "testFile1" },
-        { filename => "testFile2" }
-      ]
-    },
-    {
-      patient_id => "test_patient_2",
-      linked_files => [
-        { filename => "testFile3" },
-        { filename => "testFile4" }
-      ]
-    }
-  ];
+    map {
+      {
+        patient_id => $_ ,
+        linked_files => [
+          map {
+            { filename => getFileNameFor($_) }
+          } @{$bambai_file_index{$_}}
+        ]
+      }
+    } sort keys %bambai_file_index ]; 
 
 #  $html_contents .= addPatientSection($bam_host_dir, %files_per_patientId);
   # insert everything into the template
@@ -259,7 +270,7 @@ Learn more about this functionality at the IGV-website under <a target="blank" h
 This is only needed once, after IGV learns about this reference-genome, it will recognise it automatically in the links below.</li>
 </ol>
 </p>
-<p>last updated: <!-- TMPL_VAR NAME=timestamp -->, a service by the eilslabs data management group</p>
+<small><p>last updated: <!-- TMPL_VAR NAME=timestamp -->, a service by the eilslabs data management group</p></small>
 
 <h1>Patient Information</h1>
 <!-- TMPL_LOOP NAME=patients -->
