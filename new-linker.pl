@@ -87,17 +87,10 @@ sub parseArgs {
 sub main {
   my ($project_name, $scan_dir, $link_dir_path, $link_dir_url, $output_index) = parseArgs();
 
-
-  #my ($project_name, $scan_dir, $link_dir_path, $link_dir_url, $output_index) = @_;
-
-  print << "EOT";
-Scanning for project $project_name
-looking for files in $scan_dir
-making links in $link_dir_path
-writing overview html file to $output_index
-EOT
+  print "Started IGV scanner+linker for project $project_name\n";
 
   # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
+  print "looking for IGV-relevant files in $scan_dir\n";
   finddepth(\&findFilter, $scan_dir);
 
   clearOldLinksIn($link_dir_path);
@@ -226,14 +219,14 @@ sub makeHtmlPage {
 # e.g. .bam-files, but not .bai-files
 sub filterIndexFiles {
   my %files_per_patientId = @_;
-  my %nonIndex_files_per_patientId = {};
+  my %nonIndex_files_per_patientId = ();
 
-  while (my ($patientId, @files) = each(%files_per_patientId)) {
+  while (my ($patientId, @all_files_for_patient) = each(%files_per_patientId)) {
     my @to_keep = grep {
       not ($_ =~ /\.bai$/)  # throw out bam-index files (ending with .bai)
-    } @files;
+    } @all_files_for_patient;
 
-    $nonIndex_files_per_patientId{$patientId} = @to_keep;
+    $nonIndex_files_per_patientId{$patientId} = [@to_keep];
   }
 
   return %nonIndex_files_per_patientId;
