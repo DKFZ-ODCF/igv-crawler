@@ -55,6 +55,8 @@ sub derivePatientIdFrom {
 #   'patientId1' => [ '/some/file/path.bam', 'some/file/path.bai', ...],
 #   'patientId2' => [ '/other/file/path.bam', 'some/other/path.bai', ...],
 # }
+#
+# Sadly must be global, otherwise the File::find findFilter can't add to it
 my %bambai_file_index = ();
 
 
@@ -77,16 +79,16 @@ sub parseArgs {
              )
   or die("Error parsing command line arguments");
 
-  my $output_index_page      = catfile( $host_base_dir, (lc $project_name), "$project_name.html");
-  my $output_link_target_dir = catdir ( $host_base_dir, (lc $project_name), $link_dir);
-  my $output_link_www_url    = $www_base_url . "/" . (lc $project_name) . "/" . $link_dir; # trailing slash is added in __DATA__ template
+  my $output_file_path  = catfile( $host_base_dir, (lc $project_name), "$project_name.html");
+  my $link_dir_path     = catdir ( $host_base_dir, (lc $project_name), $link_dir);
+  my $link_dir_url      = $www_base_url . "/" . (lc $project_name) . "/" . $link_dir; # trailing slash is added in __DATA__ template
 
-  return ($project_name, $scan_dir, $output_link_target_dir, $output_link_www_url, $output_index_page)
+  return ($project_name, $scan_dir, $link_dir_path, $link_dir_url, $output_file_path)
 }
 
 
 sub main {
-  my ($project_name, $scan_dir, $link_dir_path, $link_dir_url, $output_index) = parseArgs();
+  my ($project_name, $scan_dir, $link_dir_path, $link_dir_url, $output_file_path) = parseArgs();
 
   print "Started IGV scanner+linker for project $project_name\n";
 
@@ -99,7 +101,7 @@ sub main {
   # make desired LSDF files accessible from www-directory
   makeAllFileSystemLinks($link_dir_path, %bambai_file_index);
 
-  makeHtmlPage($output_index, $link_dir_url, $project_name, %bambai_file_index);
+  makeHtmlPage($output_file_path, $link_dir_url, $project_name, %bambai_file_index);
 }
 
 
@@ -280,29 +282,38 @@ sub writeContentsToFile {
 
 # END FUNCTION DEFINITIONS ########################################################
 
+# Data section: the HTML::Template to be filled in by the code
 __DATA__
 <html>
 <head>
   <title>IGV files for <!-- TMPL_VAR NAME=project_name --></title>
 </head>
-
 <body>
+
+<h1>IGV linker</h1>
+
 <p>
-The IGV-relevant files for the <!-- TMPL_VAR NAME=project_name --> project have been made available online here over a secured connection.<br/>
-Below are some clickable links that will add said files into a running IGV session.<br/>
-Learn more about this functionality at the IGV-website under <a target="blank" href="https://www.broadinstitute.org/software/igv/ControlIGV">controlling IGV</a>
+  The IGV-relevant files for the <!-- TMPL_VAR NAME=project_name --> project have been made available online here over a secured connection.<br/>
+  Below are some clickable links that will add said files into a running IGV session.<br/>
+  Learn more about this functionality at the IGV-website under <a target="blank" href="https://www.broadinstitute.org/software/igv/ControlIGV">controlling IGV</a>
 </p>
+
 <p>
-<strong>NOTE! the links below only work if</strong>
-<ol>
-<li>IGV is already running</li>
-<li>you enabled port-control (in view > preferences > advanced > enable port > port 60151)</li>
-<li>the reference genome is available (genomes > load genome from server > add "Human&nbsp;(1kg&nbsp;b37&nbsp;+&nbsp;decoy)", also known as "1kg_v37"<br/>
-(do this before loading files, or all positions will show up as mutated)<br/>
-This is only needed once, after IGV learns about this reference-genome, it will recognise it automatically in the links below.</li>
-</ol>
+  <strong>NOTE! the links below only work if</strong>
+  <ol>
+    <li>IGV is already running</li>
+    <li>you enabled port-control (in view > preferences > advanced > enable port > port 60151)</li>
+    <li>the reference genome is available (genomes > load genome from server > add "Human&nbsp;(1kg&nbsp;b37&nbsp;+&nbsp;decoy)", also known as "1kg_v37"<br/>
+      (do this before loading files, or all positions will show up as mutated)<br/>
+      This is only needed once, after IGV learns about this reference-genome, it will recognise it automatically in the links below.</li>
+  </ol>
 </p>
-<small><p>last updated: <!-- TMPL_VAR NAME=timestamp -->, a service by the eilslabs data management group</p></small>
+
+<p><small>
+  IGV-linker, a service by the eilslabs data management group<br/>
+  powered by <a href="http://threepanelsoul.com/2013/12/16/on-perl/">readable perl&trade;</a><br/>
+  last updated: <!-- TMPL_VAR NAME=timestamp -->
+</small></p>
 
 <h1>Patient Information</h1>
 <!-- TMPL_LOOP NAME=patients -->
