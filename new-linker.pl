@@ -45,7 +45,7 @@ sub derivePatientIdFrom {
   my $filepath = shift;
   $filepath =~ /(\d{2}_[a-zA-Z0-9]+_[a-zA-Z]+)/ ;
   my $patientId = $1;
-  return $patientId; 
+  return $patientId;
 }
 
 # global list to keep track of all the bam+bai files we have found
@@ -89,7 +89,7 @@ sub main {
 
 
   #my ($project_name, $scan_dir, $link_dir_path, $link_dir_url, $output_index) = @_;
-  
+
   print << "EOT";
 Scanning for project $project_name
 looking for files in $scan_dir
@@ -123,9 +123,9 @@ sub addToIndex {
 
   # extract the patient ID from the identifier
   my $patientId = derivePatientIdFrom($file);
-  
+
   # print "found file for $patientId: $file\n";
-  
+
   # append the file-path to our list of files-per-patient
   $bambai_file_index{$patientId} = [] unless $bambai_file_index{$patientId};
   push @{ $bambai_file_index{$patientId} }, $file;
@@ -163,7 +163,7 @@ sub makeAllFileSystemLinks {
       my $newPath = catfile($newDir, $filename);
       #print "$originalFile ---> $newPath \n";
       symlink $originalFile, $newPath;
-    } 
+    }
   }
 }
 
@@ -229,20 +229,20 @@ sub filterIndexFiles {
   my %nonIndex_files_per_patientId = {};
 
   while (my ($patientId, @files) = each(%files_per_patientId)) {
-    my @to_keep = grep { 
+    my @to_keep = grep {
       not ($_ =~ /\.bai$/)  # throw out bam-index files (ending with .bai)
     } @files;
-    
+
     $nonIndex_files_per_patientId{$patientId} = @to_keep;
   }
-  
+
   return %nonIndex_files_per_patientId;
 }
 
 
 # prepares patient datastructure to insert into template
 #
-# it creates the nested structure for the list-of-patients-with-list-of-their-files 
+# it creates the nested structure for the list-of-patients-with-list-of-their-files
 # formatted as a (nested) list-of-maps, for HTML::Template
 # [
 #  {
@@ -257,21 +257,21 @@ sub filterIndexFiles {
 #
 sub formatPatientDataForTemplate {
   my %files_per_pid = @_;
-  print 
+  print
 
   # sorry for the next unreadable part!
   return [
     # outer 'list' of patient + linked-files
     map {{
         patient_id => $_ ,
-        
+
         # inner 'list' of filenames
         linked_files => [
           map {{ filename => getFileNameFor($_) }} @{$files_per_pid{$_}}
         ]
 
-    }} sort keys %files_per_pid 
-  ]; 
+    }} sort keys %files_per_pid
+  ];
 }
 
 
