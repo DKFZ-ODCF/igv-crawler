@@ -12,21 +12,32 @@ use File::Find;
 use File::Path;
 use File::Spec::Functions;
 use HTML::Template;
+use Getopt::Long;
 
-
-####################################################################################
-# SCRIPT GLOBALS
-# only used by main funtion, all other references are passed down the call hierarchy.
+#####################################################################################
+# CONSTANTS
 #
-my $project_name = 'DEEP';
-# Which directory to scan for bam files
-my $input_dir_to_scan = '/icgc/dkfzlsdf/project/DEEP/results/alignments';
-# where to create the symlinks to the discovered bamfiles
-my $output_link_target_dir = '/public-otp-files/demo/links';
-# where $output_link_target_dir is visible for internet access, no trailing slash!
-my $output_link_www_dir = 'https://otpfiles.dkfz.de/deep/links';
-# where to write the shiny overview page
-my $output_index_page = '/public-otp-files/demo/test.html';
+
+# the local FS dir where apache looks for stuff to host
+#   script will create subdirs in it named 'lc $project_name'
+my $host_base_dir = "/public-otp-files/";
+
+# the externally visible URL for 'host_base_dir' (NO TRAILING SLASH!)
+my $www_base_url  = "https://otpfiles.dkfz.de";
+
+# subdir name where to store symlinks for both file-system and URL
+my $link_dir = "links";
+
+# END CONSTANTS #####################################################################
+
+
+#####################################################################################
+# required parameters
+my $project_name = "demo";
+my $scan_dir     = '/icgc/dkfzlsdf/project/DEEP/results/alignments';
+my $pid_regex;
+#####################################################################################
+
 
 # Function to derive a patientID from a filename
 # Only thing that should normally be adapted to include a new project
@@ -37,34 +48,66 @@ sub derivePatientIdFrom {
   return $patientId; 
 }
 
-####################################################################################
-
 # global list to keep track of all the bam+bai files we have found
-# structure: index => sampleId => list-of-filesystem-paths
+# format:
+# {
+#   'patientId1' => [ '/some/file/path.bam', 'some/file/path.bai', ...],
+#   'patientId2' => [ '/other/file/path.bam', 'some/other/path.bai', ...],
+# }
 my %bambai_file_index = ();
 
-main($project_name, $input_dir_to_scan, $output_link_target_dir, $output_link_www_dir, $output_index_page);
+
+
+
+main();
+
+
+
+
+#####################################################################################
+# FUNCTION DEFINITIONS
+#
+
+
+sub parseArgs {
+  GetOptions ('project=s' => \$project_name, # will be used as "the $project_name project", as well as (lowercased) subdir name
+              'scandir=s' => \$scan_dir,     # where to look for IGV-relevant files
+              'pidformat=s' => \$pid_regex   # the regex used to extract the patient_id from a file path.
+             )
+  or die("Error parsing command line arguments");
+
+  my $output_index_page      = catfile( $host_base_dir, (lc $project_name), "$project_name.html");
+  my $output_link_target_dir = catdir ( $host_base_dir, (lc $project_name), $link_dir);
+  my $output_link_www_url    = $www_base_url . "/" . (lc $project_name) . "/" . $link_dir; # trailing slash is added in __DATA__ template
+
+  return ($project_name, $scan_dir, $output_link_target_dir, $output_link_www_url, $output_index_page)
+}
 
 
 sub main {
-  my ($project_name, $dir_to_scan, $output_dir, $output_link_www_dir, $output_index) = @_;
+  my ($project_name, $scan_dir, $link_dir_path, $link_dir_url, $output_index) = parseArgs();
+
+
+  #my ($project_name, $scan_dir, $link_dir_path, $link_dir_url, $output_index) = @_;
   
-  print "Listing bamfiles in $dir_to_scan, making links in $output_dir, writing index file to $output_index\n";
+  print << "EOT";
+Scanning for project $project_name
+looking for files in $scan_dir
+making links in $link_dir_path
+writing overview html file to $output_index
+EOT
 
   # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
-  finddepth(\&findFilter, $dir_to_scan);
+  finddepth(\&findFilter, $scan_dir);
 
-  clearOldLinksIn($output_dir);
+  clearOldLinksIn($link_dir_path);
 
   # make desired LSDF files accessible from www-directory
-  makeAllFileSystemLinks($output_dir, %bambai_file_index);
+  makeAllFileSystemLinks($link_dir_path, %bambai_file_index);
 
-  # remove clutter: clear out the index files so they won't be explicitly listed in the HTML
-  # IGV will figure out the links itself from the corresponding filename
-  filterIndexFiles(%bambai_file_index);
-
-  makeHtmlPage($output_index, $output_link_www_dir, $project_name, %bambai_file_index);
+  makeHtmlPage($output_index, $link_dir_url, $project_name, %bambai_file_index);
 }
+
 
 sub findFilter {
   my $filename = $File::Find::name;
@@ -73,6 +116,7 @@ sub findFilter {
 
   addToIndex($filename);
 }
+
 
 sub addToIndex {
   my $file = shift;
@@ -87,20 +131,24 @@ sub addToIndex {
   push @{ $bambai_file_index{$patientId} }, $file;
 }
 
+
 # recursively clears all links from a directory, and then all empty dirs.
 # This should normally clear a link-dir made by this script, but nothing else.
 # sanity-checks the provided directory to match /public-otp-files/*/links, to avoid "find -delete" mishaps
 sub clearOldLinksIn {
   my $dir_to_clear = shift;
+
+  print "Clearing out links and empty directories in $dir_to_clear\n";
+
   # sanity, don't let this work on directories that aren't ours
   die "paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/;
 
-  print "Clearing out links and empty directories in $dir_to_clear\n";
   # delete all symlinks in our directory
   system( "find -P $dir_to_clear -mount -depth -type l  -delete" );
   # clear out all directories that are now empty (or contain only empty directories -> '-p')
   system( "find -P $dir_to_clear -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
 }
+
 
 sub makeAllFileSystemLinks {
   my $link_target_dir = shift;
@@ -119,6 +167,7 @@ sub makeAllFileSystemLinks {
   }
 }
 
+
 sub makeDirectoryFor {
   my $link_target_dir = shift;
   my $patientId = shift;
@@ -129,23 +178,13 @@ sub makeDirectoryFor {
   return $path;
 }
 
+
 sub getFileNameFor {
   my $filepath = shift;
   my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
   return $filename;
 }
 
-sub filterIndexFiles {
-  my %files_per_patientId = @_;
-
-  foreach my $patientId (keys %files_per_patientId) {
-    my @to_keep = grep { 
-      not ($_ =~ /\.bai$/)  # throw out bam-index files (ending with .bai)
-    } @{ $files_per_patientId{$patientId}};
-    
-    @{ $bambai_file_index{$patientId} } = @to_keep;
-  }
-}
 
 sub makeHtmlPage {
   my $output_file = shift;
@@ -156,39 +195,20 @@ sub makeHtmlPage {
   # Get the HTML template
   my $html = do { local $/; <DATA> };
   my $template = HTML::Template->new(
-   scalarref         => \$html,
-   global_vars       => 1 # needed to make outer-var file_host_dir visible inside loops
+    scalarref         => \$html,
+    global_vars       => 1 # needed to make outer-var file_host_dir visible inside loops
   );
 
-  # prepare datstructures to insert into template
-  #
-  # sorry for the next unreadable part, explanation:
-  # it creates the nested structure for the list-of-patients-with-list-of-their-files 
-  # formatted as a (nested) list-of-maps, for HTML::Template
-  # [
-  #  {
-  #    patient_id => "patient_1",
-  #    linked_files => [
-  #      { filename => "file1" },
-  #      { filename => "file2" },
-  #      ...
-  #    ]
-  #  },
-  # ...]
-  #
-  my $formatted_patients = [
-    map {
-      {
-        patient_id => $_ ,
-        linked_files => [
-          map {
-            { filename => getFileNameFor($_) }
-          } @{$bambai_file_index{$_}}
-        ]
-      }
-    } sort keys %bambai_file_index ]; 
 
+  # remove clutter: clear out the index files so they won't be explicitly listed in the HTML
+  # IGV will figure out the index-links itself from the corresponding non-index filename
+  my %nonIndexFiles = filterIndexFiles(%bambai_file_index);
+
+  my $formatted_patients = formatPatientDataForTemplate(%nonIndexFiles);
+
+  # for some reason, writing 'localtime' directly in the param()-map didn't work
   my $timestamp = localtime;
+
   # insert everything into the template
   $template->param(
     project_name  => $project_name,
@@ -201,6 +221,60 @@ sub makeHtmlPage {
   writeContentsToFile($template->output(), $output_file);
 }
 
+
+# returns a map of PatientIds and the accompanying non-index files
+# e.g. .bam-files, but not .bai-files
+sub filterIndexFiles {
+  my %files_per_patientId = @_;
+  my %nonIndex_files_per_patientId = {};
+
+  while (my ($patientId, @files) = each(%files_per_patientId)) {
+    my @to_keep = grep { 
+      not ($_ =~ /\.bai$/)  # throw out bam-index files (ending with .bai)
+    } @files;
+    
+    $nonIndex_files_per_patientId{$patientId} = @to_keep;
+  }
+  
+  return %nonIndex_files_per_patientId;
+}
+
+
+# prepares patient datastructure to insert into template
+#
+# it creates the nested structure for the list-of-patients-with-list-of-their-files 
+# formatted as a (nested) list-of-maps, for HTML::Template
+# [
+#  {
+#    patient_id => "patient_1",
+#    linked_files => [
+#      { filename => "file1" },
+#      { filename => "file2" },
+#      ...
+#    ]
+#  },
+# ...]
+#
+sub formatPatientDataForTemplate {
+  my %files_per_pid = @_;
+  print 
+
+  # sorry for the next unreadable part!
+  return [
+    # outer 'list' of patient + linked-files
+    map {{
+        patient_id => $_ ,
+        
+        # inner 'list' of filenames
+        linked_files => [
+          map {{ filename => getFileNameFor($_) }} @{$files_per_pid{$_}}
+        ]
+
+    }} sort keys %files_per_pid 
+  ]; 
+}
+
+
 sub writeContentsToFile {
   my $contents = shift;
   my $filename = shift;
@@ -210,6 +284,8 @@ sub writeContentsToFile {
   print FILE $contents;
   close (FILE);
 }
+
+# END FUNCTION DEFINITIONS ########################################################
 
 __DATA__
 <html>
