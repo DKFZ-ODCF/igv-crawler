@@ -14,6 +14,7 @@ use File::Spec::Functions;
 use HTML::Template;
 use Getopt::Long;
 
+
 #####################################################################################
 # CONSTANTS
 #
@@ -218,18 +219,17 @@ sub makeHtmlPage {
 # returns a map of PatientIds and the accompanying non-index files
 # e.g. .bam-files, but not .bai-files
 sub filterIndexFiles {
-  my %files_per_patientId = @_;
-  my %nonIndex_files_per_patientId = ();
+  my %original = @_;
+  my %filtered = ();
 
-  while (my ($patientId, @all_files_for_patient) = each(%files_per_patientId)) {
-    my @to_keep = grep {
-      not ($_ =~ /\.bai$/)  # throw out bam-index files (ending with .bai)
-    } @all_files_for_patient;
+  foreach my $patientId (keys %original) {
+    my @all_files = @{ $original{ $patientId }};
 
-    $nonIndex_files_per_patientId{$patientId} = [@to_keep];
+    my @to_keep = grep { $_ =~ /\.bam$/ } @all_files;
+    @{ $filtered{ $patientId } } = @to_keep;
   }
 
-  return %nonIndex_files_per_patientId;
+  return %filtered;
 }
 
 
