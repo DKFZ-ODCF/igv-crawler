@@ -34,9 +34,9 @@ my $link_dir = "links";
 
 #####################################################################################
 # required parameters
-my $project_name = "demo";
+my $project_name = 'demo';
 my $scan_dir     = '/icgc/dkfzlsdf/project/DEEP/results/alignments';
-my $pid_regex;
+my $pid_regex    = '(\d{2}_[a-zA-Z0-9]+_[a-zA-Z]+)';
 #####################################################################################
 
 
@@ -44,7 +44,7 @@ my $pid_regex;
 # Only thing that should normally be adapted to include a new project
 sub derivePatientIdFrom {
   my $filepath = shift;
-  $filepath =~ /(\d{2}_[a-zA-Z0-9]+_[a-zA-Z]+)/ ;
+  $filepath =~ /$pid_regex/ ;
   my $patientId = $1;
   return $patientId;
 }
