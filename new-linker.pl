@@ -33,21 +33,14 @@ my $link_dir = "links";
 
 
 #####################################################################################
-# required parameters
+# COMMAND LINE PARAMETERS
+#
+# defaults to demo-settings
 my $project_name = 'demo';
-my $scan_dir     = '/icgc/dkfzlsdf/project/DEEP/results/alignments';
+my @scan_dirs;
 my $pid_regex    = '(\d{2}_[a-zA-Z0-9]+_[a-zA-Z]+)';
 #####################################################################################
 
-
-# Function to derive a patientID from a filename
-# Only thing that should normally be adapted to include a new project
-sub derivePatientIdFrom {
-  my $filepath = shift;
-  $filepath =~ /$pid_regex/ ;
-  my $patientId = $1;
-  return $patientId;
-}
 
 # global list to keep track of all the bam+bai files we have found
 # format:
@@ -73,28 +66,40 @@ main();
 
 
 sub parseArgs {
-  GetOptions ('project=s' => \$project_name, # will be used as "the $project_name project", as well as (lowercased) subdir name
-              'scandir=s' => \$scan_dir,     # where to look for IGV-relevant files
-              'pidformat=s' => \$pid_regex   # the regex used to extract the patient_id from a file path.
+  GetOptions ('project=s'   => \$project_name, # will be used as "the $project_name project", as well as (lowercased) subdir name
+              'scandir=s'   => \@scan_dirs,    # where to look for IGV-relevant files
+              'pidformat=s' => \$pid_regex     # the regex used to extract the patient_id from a file path.
              )
   or die("Error parsing command line arguments");
+
+  # canonicalize @scandirs
+  #
+  # scandirs may be entered by either:
+  # 1) repeated command line args:          "--scandir /dir/a --scandir /dir/b"
+  #    --> multiple entries in @scan_dirs
+  # 2) single command line arg with commas: "--scandir /dir/a,/dir/b"
+  #    --> split all strings
+  @scan_dirs = split(',', join(',', @scan_dirs));
 
   my $output_file_path  = catfile( $host_base_dir, (lc $project_name), "$project_name.html");
   my $link_dir_path     = catdir ( $host_base_dir, (lc $project_name), $link_dir);
   my $link_dir_url      = $www_base_url . "/" . (lc $project_name) . "/" . $link_dir; # trailing slash is added in __DATA__ template
 
-  return ($project_name, $scan_dir, $link_dir_path, $link_dir_url, $output_file_path)
+  return ($link_dir_path, $link_dir_url, $output_file_path)
 }
 
 
 sub main {
-  my ($project_name, $scan_dir, $link_dir_path, $link_dir_url, $output_file_path) = parseArgs();
+  my ($link_dir_path, $link_dir_url, $output_file_path) = parseArgs();
 
   print "Started IGV scanner+linker for project $project_name\n";
 
   # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
-  print "looking for IGV-relevant files in $scan_dir\n";
-  finddepth(\&findFilter, $scan_dir);
+  print "looking for IGV-relevant files in:\n";
+  foreach my $dir (@scan_dirs) {
+    print "  $dir\n";
+  }
+  finddepth(\&findFilter, @scan_dirs);
 
   clearOldLinksIn($link_dir_path);
 
@@ -125,6 +130,16 @@ sub addToIndex {
   # append the file-path to our list of files-per-patient
   $bambai_file_index{$patientId} = [] unless $bambai_file_index{$patientId};
   push @{ $bambai_file_index{$patientId} }, $file;
+}
+
+
+# Function to derive a patientID from a filename
+# Only thing that should normally be adapted to include a new project
+sub derivePatientIdFrom {
+  my $filepath = shift;
+  $filepath =~ /$pid_regex/ ;
+  my $patientId = $1;
+  return $patientId;
 }
 
 
@@ -282,6 +297,7 @@ sub writeContentsToFile {
 
 # END FUNCTION DEFINITIONS ########################################################
 
+###################################################################################
 # Data section: the HTML::Template to be filled in by the code
 __DATA__
 <html>
