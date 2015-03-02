@@ -92,7 +92,7 @@ sub parseArgs {
 sub main {
   my ($link_dir_path, $link_dir_url, $output_file_path) = parseArgs();
 
-  print "Started IGV scanner+linker for project $project_name\n";
+  print "Started IGV scanner+linker for project '$project_name'\n";
 
   # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
   print "looking for IGV-relevant files in:\n";
@@ -326,24 +326,42 @@ __DATA__
 </p>
 
 <p><small>
-  IGV-linker, a service by the eilslabs data management group<br/>
+  IGV-linker v2.0, a service by the eilslabs data management group<br/>
   powered by <a href="http://threepanelsoul.com/2013/12/16/on-perl/">readable perl&trade;</a><br/>
   last updated: <!-- TMPL_VAR NAME=timestamp -->
 </small></p>
 
+<div style="
+  position: fixed; top: 5px; right: 0px;
+  font-size: small;
+  height: 90%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 20px 4px 6px;
+  background-color: white;
+  border: 1px solid black;
+  border-right: none;
+  border-bottom-left-radius: 7px;
+  border-top-left-radius: 7px;
+">
+sign out
+<hr>
+Jump to:
+<ul style="padding-left: 26px;">
+<!-- TMPL_LOOP NAME=patients -->
+<li><a href="#<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></a></li><!-- /TMPL_LOOP -->
+</ul>
+</div>
+
 <h1>Patient Information</h1>
 <!-- TMPL_LOOP NAME=patients -->
-  <h2><!-- TMPL_VAR NAME=patient_id --></h2>
+  <h2 id="<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></h2>
   <ul>
     <!-- TMPL_LOOP NAME=linked_files -->
-      <li>
-        <a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=filename -->&genome=1kg_v37">
+      <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=filename -->&genome=1kg_v37">
           <!-- TMPL_VAR NAME=filename -->
-        </a>
-      </li>
-    <!-- /TMPL_LOOP -->
-  </ul>
-<!-- /TMPL_LOOP -->
+      </a></li><!-- /TMPL_LOOP -->
+  </ul><!-- /TMPL_LOOP -->
 
 </body>
 </html>
