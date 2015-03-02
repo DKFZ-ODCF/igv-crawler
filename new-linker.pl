@@ -325,16 +325,16 @@ __DATA__
   </ol>
 </p>
 
-<p><small>
+<p id="about-blurb"><small>
   IGV-linker v2.0, a service by the eilslabs data management group<br/>
   powered by <a href="http://threepanelsoul.com/2013/12/16/on-perl/">readable perl&trade;</a><br/>
   last updated: <!-- TMPL_VAR NAME=timestamp -->
 </small></p>
 
-<div style="
+<div id="menu" style="
   position: fixed; top: 5px; right: 0px;
   font-size: small;
-  height: 90%;
+  height: 95%;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 4px 20px 4px 6px;
@@ -344,8 +344,6 @@ __DATA__
   border-bottom-left-radius: 7px;
   border-top-left-radius: 7px;
 ">
-sign out
-<hr>
 Jump to:
 <ul style="padding-left: 26px;">
 <!-- TMPL_LOOP NAME=patients -->
