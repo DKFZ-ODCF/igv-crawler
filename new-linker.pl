@@ -80,10 +80,11 @@ sub parseArgs {
   # 2) single command line arg with commas: "--scandir /dir/a,/dir/b"
   #    --> split all strings
   @scan_dirs = split(',', join(',', @scan_dirs));
-
-  my $output_file_path  = catfile( $host_base_dir, (lc $project_name), "$project_name.html");
-  my $link_dir_path     = catdir ( $host_base_dir, (lc $project_name), $link_dir);
-  my $link_dir_url      = $www_base_url . "/" . (lc $project_name) . "/" . $link_dir; # trailing slash is added in __DATA__ template
+  
+  my $project_name_lower = lc $project_name;
+  my $output_file_path   = catfile( $host_base_dir, $project_name_lower, "$project_name_lower.html");
+  my $link_dir_path      = catdir ( $host_base_dir, $project_name_lower, $link_dir);
+  my $link_dir_url       = $www_base_url . "/" . $project_name_lower . "/" . $link_dir; # trailing slash is added in __DATA__ template
 
   return ($link_dir_path, $link_dir_url, $output_file_path)
 }
