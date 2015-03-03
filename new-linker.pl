@@ -335,8 +335,9 @@ __DATA__
 
 <p id="about-blurb"><small>
   IGV-linker v2.0, a service by the eilslabs data management group<br/>
+  questions, wishes, improvements or suggestions: <a href="mailto:j.kerssemakers@dkfz-heidelberg.de&subject=Feedback for <!-- TMPL_VAR NAME=project_name --> IGV-linker">j.kerssemakers@dkfz-heidelberg.de</a><br/>
   powered by <a href="http://threepanelsoul.com/2013/12/16/on-perl/">readable perl&trade;</a><br/>
-  last updated: <!-- TMPL_VAR NAME=timestamp -->
+  last updated: <!-- TMPL_VAR NAME=timestamp --><br/>
 </small></p>
 
 <div id="menu" style="
