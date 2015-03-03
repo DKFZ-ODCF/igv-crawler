@@ -304,7 +304,7 @@ __DATA__
 <head>
   <title>IGV files for <!-- TMPL_VAR NAME=project_name --></title>
 </head>
-<body>
+<body style="padding-right: 280px;">
 
 <h1>IGV linker</h1>
 
