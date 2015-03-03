@@ -13,6 +13,7 @@ use File::Path;
 use File::Spec::Functions;
 use HTML::Template;
 use Getopt::Long;
+use Data::Dumper;
 
 
 #####################################################################################
@@ -243,15 +244,33 @@ sub makeHtmlPage {
 
 # returns a map of PatientIds and the accompanying non-index files
 # e.g. .bam-files, but not .bai-files
+# also filters all .bam's that do not have a corresponding .bai
 sub filterIndexFiles {
   my %original = @_;
   my %filtered = ();
 
   foreach my $patientId (keys %original) {
-    my @all_files = @{ $original{ $patientId }};
+    # meaningful temp names
+    my @all_files = sort @{ $original{ $patientId }};
+    my @found_data_files  = grep { $_ =~ /\.bam$/ } @all_files;
+    my @found_index_files = grep { $_ =~ /\.bai$/ } @all_files;
 
-    my @to_keep = grep { $_ =~ /\.bam$/ } @all_files;
-    @{ $filtered{ $patientId } } = @to_keep;
+    # figure out which bam's have no samename.bai
+    ## create map ( samename_expected.bai => samename_found_on_disk.bam )
+    my %expected_index_files = map {
+      my $found_datafile = $_;
+
+      my $expected_indexfile = $found_datafile;
+      $expected_indexfile =~ s/\.bam$/\.bai/;
+
+      { $expected_indexfile => $found_datafile} # return hash-element
+    } @found_data_files;
+    ## throw out found .bai from expected .bai; delete returns the associated value (= samename.bam)
+    my @found_datafiles_with_found_indexfiles = delete @expected_index_files{@found_index_files};
+    # %expected_index_files now contains hash of ( samename_but_not_found.bai => samename_found_on_disk.bam )
+
+    # store result
+    @{ $filtered{ $patientId } } = @found_datafiles_with_found_indexfiles;
   }
 
   return %filtered;
@@ -340,6 +359,7 @@ __DATA__
   last updated: <!-- TMPL_VAR NAME=timestamp --><br/>
 </small></p>
 
+<!-- SIDE BAR MENU: has quick-links to each patient-id header below -->
 <div id="menu" style="
   position: fixed; top: 5px; right: 0px;
   font-size: small;
