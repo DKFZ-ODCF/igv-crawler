@@ -38,7 +38,7 @@ my $link_dir = "links";
 # defaults to demo-settings
 my $project_name = 'demo';
 my @scan_dirs;
-my $pid_regex    = '(\d{2}_[a-zA-Z0-9]+_[a-zA-Z]+)';
+my $pid_regex;
 #####################################################################################
 
 
@@ -72,7 +72,13 @@ sub parseArgs {
              )
   or die("Error parsing command line arguments");
 
-  # canonicalize @scandirs
+  # sanity check: project name?
+  die 'No project name specified, aborting!' if ($project_name eq '');
+
+  # sanity check: pid-format
+  die "Didn't specifify pid-format, cannot extract patient ID from file paths, aborting!" if ($pid_regex eq "");
+
+  # canonicalize + sanity check @scandirs
   #
   # scandirs may be entered by either:
   # 1) repeated command line args:          "--scandir /dir/a --scandir /dir/b"
@@ -80,6 +86,7 @@ sub parseArgs {
   # 2) single command line arg with commas: "--scandir /dir/a,/dir/b"
   #    --> split all strings
   @scan_dirs = split(',', join(',', @scan_dirs));
+  die 'Specified no directories to scan, aborting!' if ((scalar @scan_dirs) == 0);
   
   my $project_name_lower = lc $project_name;
   my $output_file_path   = catfile( $host_base_dir, $project_name_lower, "$project_name_lower.html");
