@@ -346,9 +346,9 @@ __DATA__
   <ol>
     <li>IGV is already running</li>
     <li>you enabled port-control (in view > preferences > advanced > enable port > port 60151)</li>
-    <li>the reference genome is available (genomes > load genome from server > add "Human&nbsp;(1kg&nbsp;b37&nbsp;+&nbsp;decoy)", also known as "1kg_v37"<br/>
+    <li>you have the correct reference genome loaded before clicking the link.<br/>
       (do this before loading files, or all positions will show up as mutated)<br/>
-      This is only needed once, after IGV learns about this reference-genome, it will recognise it automatically in the links below.</li>
+      to add missing genomes to IGV, see menu > genomes > load genome from server<br/>
   </ol>
 </p>
 
@@ -385,7 +385,7 @@ Jump to:
   <h2 id="<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></h2>
   <ul>
     <!-- TMPL_LOOP NAME=linked_files -->
-      <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=filename -->&genome=1kg_v37">
+      <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=filename -->">
           <!-- TMPL_VAR NAME=filename -->
       </a></li><!-- /TMPL_LOOP -->
   </ul><!-- /TMPL_LOOP -->
