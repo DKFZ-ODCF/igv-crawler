@@ -103,11 +103,11 @@ sub main {
 
   print "Started IGV scanner+linker for project '$project_name'\n";
 
-  # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
   print "looking for IGV-relevant files in:\n";
   foreach my $dir (@scan_dirs) {
     print "  $dir\n";
   }
+  # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
   finddepth(\&findFilter, @scan_dirs);
 
   clearOldLinksIn($link_dir_path);
@@ -133,8 +133,6 @@ sub addToIndex {
 
   # extract the patient ID from the identifier
   my $patientId = derivePatientIdFrom($file);
-
-  # print "found file for $patientId: $file\n";
 
   # append the file-path to our list of files-per-patient
   $bambai_file_index{$patientId} = [] unless $bambai_file_index{$patientId};
@@ -182,7 +180,6 @@ sub makeAllFileSystemLinks {
       my $filename = getFileNameFor($originalFile);
 
       my $newPath = catfile($newDir, $filename);
-      #print "$originalFile ---> $newPath \n";
       symlink $originalFile, $newPath;
     }
   }
@@ -265,7 +262,7 @@ sub findDatafilesToDisplay {
     my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', @all_files);
 
     # store result
-    @{ $filtered{ $patientId } } = (@bams_having_bais, @bams_having_bambais);
+    @{ $filtered{ $patientId } } = sort (@bams_having_bais, @bams_having_bambais);
   }
 
   return %filtered;
