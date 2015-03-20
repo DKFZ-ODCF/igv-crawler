@@ -279,9 +279,9 @@ sub findDatafilesToDisplay {
 sub findFilesWithIndices {
   # meaningful temp names
   my $data_extension = shift; # e.g. .bam
-  my $data_pattern = quotemeta($data_extension);
+  my $data_pattern = quotemeta($data_extension) . '$';
   my $index_extension = shift; # e.g .bai or .bam.bai
-  my $index_pattern = quotemeta($index_extension);
+  my $index_pattern = quotemeta($index_extension) . '$';
   my @all_files = @_;
 
   # first, gather up our datafiles and indexfiles
@@ -295,8 +295,9 @@ sub findFilesWithIndices {
     my $expected_index = $found_data;
     $expected_index =~ s/$data_pattern/$index_extension/;
 
+    # 'return' map k,v pair
     # NOTE: key,value swapped in counterintuitive way for cleverness below
-    return { $expected_index => $found_data}
+    { $expected_index => $found_data}
   } @found_data;
 
   # finally: be clever :-)
@@ -306,6 +307,10 @@ sub findFilesWithIndices {
   #   this immediately gives us a list of all datafiles which have a corresponding indexfiles
   my @data_having_index = delete @expected_indices{@found_indices};
   # %expected_indices now contains the hash { missing-index-file => found-data-file }
+
+  # remove undefs resulting from leftover index-files whose data-file was removed/not-found
+  # (removing non-existant keys returns an undef)
+  @data_having_index = grep { defined } @data_having_index;
 
   return @data_having_index;
 }
