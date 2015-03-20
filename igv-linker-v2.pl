@@ -180,6 +180,7 @@ sub makeAllFileSystemLinks {
     my $newDir = makeDirectoryFor($link_target_dir, $patientId);
     foreach my $originalFile (@{ $files_per_patientId{$patientId} }) {
       my $filename = getFileNameFor($originalFile);
+
       my $newPath = catfile($newDir, $filename);
       #print "$originalFile ---> $newPath \n";
       symlink $originalFile, $newPath;
@@ -216,7 +217,7 @@ sub makeHtmlPage {
   my $html = do { local $/; <DATA> };
   my $template = HTML::Template->new(
     scalarref         => \$html,
-    global_vars       => 1 # needed to make outer-var file_host_dir visible inside loops
+    global_vars       => 1 # needed to make outer-var file_host_dir visible inside per-patient loops for links
   );
 
 
@@ -226,7 +227,7 @@ sub makeHtmlPage {
 
   my $formatted_patients = formatPatientDataForTemplate(%nonIndexFiles);
 
-  # for some reason, writing 'localtime' directly in the param()-map didn't work
+  # for some reason, writing 'localtime' directly in the param()-map didn't work, so we need a temp-var
   my $timestamp = localtime;
 
   # insert everything into the template
