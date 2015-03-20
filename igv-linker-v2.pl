@@ -226,7 +226,7 @@ sub makeHtmlPage {
   my %nonIndexFiles = findDatafilesToDisplay(%bambai_file_index);
 
   my $formatted_patients = formatPatientDataForTemplate(%nonIndexFiles);
-
+  my $formatted_scandirs = [ map {{dir => $_}} @scan_dirs ];
   # for some reason, writing 'localtime' directly in the param()-map didn't work, so we need a temp-var
   my $timestamp = localtime;
 
@@ -236,7 +236,7 @@ sub makeHtmlPage {
     timestamp     => $timestamp,
     file_host_dir => $file_host_dir,
     patients      => $formatted_patients,
-    scandirs      => map {{dir => $_}} @scan_dirs
+    scandirs      => $formatted_scandirs
   );
 
 
@@ -328,7 +328,6 @@ sub findFilesWithIndices {
 #
 sub formatPatientDataForTemplate {
   my %files_per_pid = @_;
-  print
 
   # sorry for the next unreadable part!
   return [
