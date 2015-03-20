@@ -368,7 +368,7 @@ __DATA__
 </head>
 <body style="padding-right: 280px;">
 
-<h1>IGV linker</h1>
+<h1><!-- TMPL_VAR NAME=project_name --> IGV linker</h1>
 
 <p>
   The IGV-relevant files for the <!-- TMPL_VAR NAME=project_name --> project have been made available online here over a secured connection.<br/>
