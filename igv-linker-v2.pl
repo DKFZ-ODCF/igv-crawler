@@ -415,6 +415,7 @@ __DATA__
   border-right: none;
   border-bottom-left-radius: 7px;
   border-top-left-radius: 7px;
+  white-space: nowrap;
 ">
 Jump to:
 <ul style="padding-left: 26px;">
