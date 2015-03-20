@@ -235,7 +235,8 @@ sub makeHtmlPage {
     project_name  => $project_name,
     timestamp     => $timestamp,
     file_host_dir => $file_host_dir,
-    patients      => $formatted_patients
+    patients      => $formatted_patients,
+    scandirs      => map {{dir => $_}} @scan_dirs
   );
 
 
@@ -358,6 +359,11 @@ __DATA__
   questions, wishes, improvements or suggestions: <a href="mailto:j.kerssemakers@dkfz-heidelberg.de">j.kerssemakers@dkfz-heidelberg.de</a><br/>
   powered by <a href="http://threepanelsoul.com/2013/12/16/on-perl/">readable perl&trade;</a><br/>
   last updated: <!-- TMPL_VAR NAME=timestamp --><br/>
+  generated from files found in:
+  <ul>
+  <!-- TMPL_LOOP NAME=scandirs -->
+    <li><!-- TMPL_VAR NAME=dir --></li><!-- /TMPL_LOOP -->
+  </ul>
 </small></p>
 
 <!-- SIDE BAR MENU: has quick-links to each patient-id header below -->
