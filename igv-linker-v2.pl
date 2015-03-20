@@ -223,7 +223,7 @@ sub makeHtmlPage {
 
   # remove clutter: clear out the index files so they won't be explicitly listed in the HTML
   # IGV will figure out the index-links itself from the corresponding non-index filename
-  my %nonIndexFiles = filterIndexFiles(%bambai_file_index);
+  my %nonIndexFiles = findDatafilesToDisplay(%bambai_file_index);
 
   my $formatted_patients = formatPatientDataForTemplate(%nonIndexFiles);
 
@@ -244,38 +244,70 @@ sub makeHtmlPage {
 }
 
 
-# returns a map of PatientIds and the accompanying non-index files
-# e.g. .bam-files, but not .bai-files
-# also filters all .bam's that do not have a corresponding .bai
-sub filterIndexFiles {
+# Finds all datafiles that should be listed in the html
+#
+# namely:
+# - .bam's having .bai's
+# - .bam's having .bam.bai's
+#
+# the index-files themselves (.bai's, .bam.bai's) are not included in the html-output
+# because by this point, the symlinks already exist, and IGV will derive
+# the index-file-link from the data-file-link
+sub findDatafilesToDisplay {
   my %original = @_;
   my %filtered = ();
 
   foreach my $patientId (keys %original) {
-    # meaningful temp names
+    ### meaningful temp names
     my @all_files = sort @{ $original{ $patientId }};
-    my @found_data_files  = grep { $_ =~ /\.bam$/ } @all_files;
-    my @found_index_files = grep { $_ =~ /\.bai$/ } @all_files;
 
-    # figure out which bam's have no samename.bai
-    ## create map ( samename_expected.bai => samename_found_on_disk.bam )
-    my %expected_index_files = map {
-      my $found_datafile = $_;
-
-      my $expected_indexfile = $found_datafile;
-      $expected_indexfile =~ s/\.bam$/\.bai/;
-
-      { $expected_indexfile => $found_datafile} # return hash-element
-    } @found_data_files;
-    ## throw out found .bai from expected .bai; delete returns the associated value (= samename.bam)
-    my @found_datafiles_with_found_indexfiles = delete @expected_index_files{@found_index_files};
-    # %expected_index_files now contains hash of ( samename_but_not_found.bai => samename_found_on_disk.bam )
+    my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     @all_files);
+    my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', @all_files);
 
     # store result
-    @{ $filtered{ $patientId } } = @found_datafiles_with_found_indexfiles;
+    @{ $filtered{ $patientId } } = (@bams_having_bais, @bams_having_bambais);
   }
 
   return %filtered;
+}
+
+# returns a list of the datafiles that have a matching index-file
+#
+# i.e. given a list of found datafiles+indexfiles
+# returns the list of datafiles that have an indexfile in the input
+# effectively removing both indexless-datafiles AND the indexfiles from the input
+sub findFilesWithIndices {
+  # meaningful temp names
+  my $data_extension = shift; # e.g. .bam
+  my $data_pattern = quotemeta($data_extension);
+  my $index_extension = shift; # e.g .bai or .bam.bai
+  my $index_pattern = quotemeta($index_extension);
+  my @all_files = @_;
+
+  # first, gather up our datafiles and indexfiles
+  my @found_data    = grep { $_ =~ /$data_pattern/  } @all_files;
+  my @found_indices = grep { $_ =~ /$index_pattern/ } @all_files;
+
+  # second, map each datafile to its _expected_ indexfile
+  my %expected_indices = map {
+    my $found_data = $_;
+
+    my $expected_index = $found_data;
+    $expected_index =~ s/$data_pattern/$index_extension/;
+
+    # NOTE: key,value swapped in counterintuitive way for cleverness below
+    return { $expected_index => $found_data}
+  } @found_data;
+
+  # finally: be clever :-)
+  # delete the found index-files from expected-index-files map;
+  #   since "delete ASSOC_ARRAY" returns the associated values of all deleted keys
+  #   (i.e. the datafile attached to each found-index-file, thanks to the 'inverted' key,value from before)
+  #   this immediately gives us a list of all datafiles which have a corresponding indexfiles
+  my @data_having_index = delete @expected_indices{@found_indices};
+  # %expected_indices now contains the hash { missing-index-file => found-data-file }
+
+  return @data_having_index;
 }
 
 
