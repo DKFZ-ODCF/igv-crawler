@@ -162,7 +162,7 @@ sub clearOldLinksIn {
   print "Clearing out links and empty directories in $dir_to_clear\n";
 
   # sanity, don't let this work on directories that aren't ours
-  die "paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/;
+  die "paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/; # intentionally hardcoding 'links' instead of $link_dir
 
   # delete all symlinks in our directory
   system( "find -P $dir_to_clear -mount -depth -type l  -delete" );
