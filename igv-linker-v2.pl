@@ -202,8 +202,14 @@ sub makeDirectoryFor {
 
 sub getFileNameFor {
   my $filepath = shift;
-  my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
-  return $filename;
+  #my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
+  #return $filename;
+  
+  # reduce clutter: shorten always-there paths to [project|analysis]
+  $filepath =~ s|^/icgc/dkfzlsdf/project/|[project] | ;
+  $filepath =~ s|^/icgc/dkfzlsdf/analysis/|[analysis] | ;
+
+  return $filepath
 }
 
 
