@@ -133,20 +133,23 @@ sub addToIndex {
 
   # extract the patient ID from the identifier
   my $patientId = derivePatientIdFrom($file);
-
-  # append the file-path to our list of files-per-patient
-  $bambai_file_index{$patientId} = [] unless $bambai_file_index{$patientId};
-  push @{ $bambai_file_index{$patientId} }, $file;
+  if ($patientId ne 'ERROR-NO-MATCH') {
+    # append the file-path to our list of files-per-patient
+    $bambai_file_index{$patientId} = [] unless $bambai_file_index{$patientId};
+    push @{ $bambai_file_index{$patientId} }, $file;
+  }
 }
 
 
 # Function to derive a patientID from a filename
-# Only thing that should normally be adapted to include a new project
 sub derivePatientIdFrom {
   my $filepath = shift;
-  $filepath =~ /$pid_regex/ ;
-  my $patientId = $1;
-  return $patientId;
+  if ($filepath =~ /$pid_regex/) {
+    my $patientId = $1;
+    return $patientId;
+  } else {
+    return 'ERROR-NO-MATCH';
+  }
 }
 
 
