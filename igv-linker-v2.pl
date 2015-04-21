@@ -53,7 +53,10 @@ my $pid_regex;
 # Sadly must be global, otherwise the File::find findFilter can't add to it
 my %bambai_file_index = ();
 
-
+# global list of all dirs that where inaccesible to the File::find run
+# 
+# Sadly must be global, otherwise the File::find findFilter can't add to it
+my @inaccesible_dirs;
 
 
 main();
@@ -108,7 +111,7 @@ sub main {
     print "  $dir\n";
   }
   # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
-  finddepth(\&findFilter, @scan_dirs);
+  finddepth( {wanted => \&findFilter, preprocess => \&excludeAndLogUnreadableDirs }, @scan_dirs);
 
   clearOldLinksIn($link_dir_path);
 
@@ -125,6 +128,18 @@ sub findFilter {
   return unless $filename =~ /(.*)\.ba[im]$/; # skip files that're not a bamfile or a bam-index
 
   addToIndex($filename);
+}
+
+sub excludeAndLogUnreadableDirs {
+  # thank you http://www.perlmonks.org/?node_id=1023278
+  grep {
+    if ( -d $_ and !-r $_ ) {
+      push @inaccessible_dirs, "$File::Find::dir/$_";
+      0;    # don't pass on inaccessible dir
+    } else {
+      1;
+    }
+  } @_;
 }
 
 
