@@ -180,7 +180,7 @@ sub makeAllFileSystemLinks {
   foreach my $patientId (keys %files_per_patientId) {
     my $newDir = makeDirectoryFor($link_target_dir, $patientId);
     foreach my $originalFile (@{ $files_per_patientId{$patientId} }) {
-      my $filename = getFileNameFor($originalFile);
+      my $filename = getDiskFileNameFor($originalFile);
 
       my $newPath = catfile($newDir, $filename);
       symlink $originalFile, $newPath;
@@ -200,16 +200,21 @@ sub makeDirectoryFor {
 }
 
 
-sub getFileNameFor {
+sub getDisplayFileNameFor {
   my $filepath = shift;
-  #my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
-  #return $filename;
-  
-  # reduce clutter: shorten always-there paths to [project|analysis]
-  $filepath =~ s|^/icgc/dkfzlsdf/project/|[project] | ;
-  $filepath =~ s|^/icgc/dkfzlsdf/analysis/|[analysis] | ;
+  my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
+  return $filename;
 
-  return $filepath
+  # reduce clutter: shorten always-there paths to [project|analysis]
+  #$filepath =~ s|^/icgc/dkfzlsdf/project/|[project] | ;
+  #$filepath =~ s|^/icgc/dkfzlsdf/analysis/|[analysis] | ;
+  #return $filepath
+}
+
+sub getDiskFileNameFor {
+  my $filepath = shift;
+  my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
+  return $filename;
 }
 
 
@@ -330,8 +335,8 @@ sub findFilesWithIndices {
 #  {
 #    patient_id => "patient_1",
 #    linked_files => [
-#      { filename => "file1" },
-#      { filename => "file2" },
+#      { diskfilename => "file1", displayfilename => "[analysis] /some/folder/file1" },
+#      { diskfilename => "file2", displayfilename => "[analysis] /some/folder/file2" },
 #      ...
 #    ]
 #  },
@@ -348,7 +353,10 @@ sub formatPatientDataForTemplate {
 
         # inner 'list' of filenames
         linked_files => [
-          map {{ filename => getFileNameFor($_) }} @{$files_per_pid{$_}}
+          map {{
+            diskfilename    => getDiskFileNameFor($_),
+            displayfilename => getDisplayFileNameFor($_)
+          }} @{$files_per_pid{$_}}
         ]
 
     }} sort keys %files_per_pid
@@ -435,8 +443,8 @@ Jump to:
   <h2 id="<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></h2>
   <ul>
     <!-- TMPL_LOOP NAME=linked_files -->
-      <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=filename -->">
-          <!-- TMPL_VAR NAME=filename -->
+      <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=diskfilename -->">
+          <!-- TMPL_VAR NAME=displayfilename -->
       </a></li><!-- /TMPL_LOOP -->
   </ul><!-- /TMPL_LOOP -->
 
