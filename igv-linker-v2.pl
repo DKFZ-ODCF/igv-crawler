@@ -229,7 +229,7 @@ sub getDisplayFileNameFor {
 
   if ($displaymode eq "fullpath") {
     return $filepath;
-  } else if ($displaymode eq "nameonly") {
+  } elsif ($displaymode eq "nameonly") {
     my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
     return $filename;
   }
