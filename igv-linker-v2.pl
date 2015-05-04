@@ -40,6 +40,7 @@ my $link_dir = "links";
 my $project_name = 'demo';
 my @scan_dirs;
 my $pid_regex;
+my $displaymode = "nameonly";
 #####################################################################################
 
 
@@ -72,7 +73,8 @@ main();
 sub parseArgs {
   GetOptions ('project=s'   => \$project_name, # will be used as "the $project_name project", as well as (lowercased) subdir name
               'scandir=s'   => \@scan_dirs,    # where to look for IGV-relevant files
-              'pidformat=s' => \$pid_regex     # the regex used to extract the patient_id from a file path.
+              'pidformat=s' => \$pid_regex,    # the regex used to extract the patient_id from a file path.
+              'display=s'   => \$displaymode   # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
              )
   or die("Error parsing command line arguments");
 
@@ -81,6 +83,12 @@ sub parseArgs {
 
   # sanity check: pid-format
   die "Didn't specifify pid-format, cannot extract patient ID from file paths, aborting!" if ($pid_regex eq "");
+
+  # sanity check: display
+  # keyword match?
+  die "display mode not recognised, use either \"nameonly\", \"fullpath\", or a compilable regex" unless (
+    ($displaymode eq "nameonly" or $displaymode eq "fullpath")
+  );
 
   # canonicalize + sanity check @scandirs
   #
@@ -217,8 +225,13 @@ sub makeDirectoryFor {
 
 sub getDisplayFileNameFor {
   my $filepath = shift;
-  my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
-  return $filename;
+
+  if ($displaymode eq "fullpath") {
+    return $filepath;
+  } else if ($displaymode eq "nameonly") {
+    my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
+    return $filename;
+  }
 
   # reduce clutter: shorten always-there paths to [project|analysis]
   #$filepath =~ s|^/icgc/dkfzlsdf/project/|[project] | ;
