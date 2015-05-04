@@ -57,7 +57,7 @@ my %bambai_file_index = ();
 # global list of all dirs that where inaccesible to the File::find run
 # 
 # Sadly must be global, otherwise the File::find findFilter can't add to it
-my @inaccesible_dirs;
+my @inaccessible_dirs;
 
 
 main();
@@ -127,6 +127,8 @@ sub main {
   makeAllFileSystemLinks($link_dir_path, %bambai_file_index);
 
   makeHtmlPage($output_file_path, $link_dir_url, $project_name, %bambai_file_index);
+
+  reportUnreadableDirs();
 }
 
 
@@ -149,7 +151,6 @@ sub excludeAndLogUnreadableDirs {
     }
   } @_;
 }
-
 
 sub addToIndex {
   my $file = shift;
@@ -400,6 +401,13 @@ sub writeContentsToFile {
   open (FILE, "> $filename") || die "problem opening $filename\n";
   print FILE $contents;
   close (FILE);
+}
+
+sub reportUnreadableDirs {
+  print "Unreadable directories:\n";
+  foreach my $unreadable_dir (sort @inaccessible_dirs) {
+    print "  $unreadable_dir\n";
+  }
 }
 
 # END FUNCTION DEFINITIONS ########################################################
