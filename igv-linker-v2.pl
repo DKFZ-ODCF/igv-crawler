@@ -36,11 +36,11 @@ my $link_dir = "links";
 #####################################################################################
 # COMMAND LINE PARAMETERS
 #
-# defaults to demo-settings
-my $project_name = 'demo';
+my $project_name = 'demo';    # defaults to demo-settings, to not-break prod when someone forgets to specify
 my @scan_dirs;
 my $pid_regex;
-my $displaymode = "nameonly";
+my $displaymode = "nameonly"; # historical behaviour is filename-only, without dir-path
+my $displayregex;             # parsed version of $displaymode, in case it is a regex
 #####################################################################################
 
 
@@ -84,11 +84,20 @@ sub parseArgs {
   # sanity check: pid-format
   die "Didn't specifify pid-format, cannot extract patient ID from file paths, aborting!" if ($pid_regex eq "");
 
-  # sanity check: display
-  # keyword match?
-  die "display mode not recognised, use either \"nameonly\", \"fullpath\", or a compilable regex" unless (
-    ($displaymode eq "nameonly" or $displaymode eq "fullpath")
-  );
+  # sanity check: display mode
+  if ($displaymode =~ /^regex=(.*)/) {
+    $displaymode = 'regex';    
+    $displayregex = $1;
+    eval {
+      $displayregex = qr/$displayregex/;
+    } or do {
+      die "error encountered while parsing display-mode regex:\n$@";
+    };
+  } elsif ($displaymode ne 'nameonly' and
+           $displaymode ne 'fullpath') {
+    die "display mode not recognised, use either \"nameonly\", \"fullpath\" or \"regex=SOMEREGEX\"";
+  }
+
 
   # canonicalize + sanity check @scandirs
   #
@@ -232,6 +241,9 @@ sub getDisplayFileNameFor {
   } elsif ($displaymode eq "nameonly") {
     my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
     return $filename;
+  } else { # we must have a regex in $displayregex, use it
+    # nothing yet
+    return "regex: $filepath";
   }
 
   # reduce clutter: shorten always-there paths to [project|analysis]
