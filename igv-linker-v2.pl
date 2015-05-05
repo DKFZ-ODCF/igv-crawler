@@ -88,6 +88,9 @@ sub parseArgs {
   if ($displaymode =~ /^regex=(.*)/) {
     $displaymode = 'regex';    
     $displayregex = $1;
+    if (index($displayregex, '(') == -1) {
+      die "regex must contain at least one capture group to display";
+    }
     eval {
       $displayregex = qr/$displayregex/;
     } or do {
