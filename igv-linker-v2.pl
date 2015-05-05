@@ -98,8 +98,8 @@ sub parseArgs {
   if ($displaymode =~ /^regex=(.*)/) {
     $displaymode = 'regex';    
     $displayregex = $1;
-    if (index($displayregex, '(') == -1) {
-      die "regex must contain at least one capture group to display";
+    if (index($displayregex, '(') == -1) {   # yes, a crafty user could fool this with (?:), but then you're intentionally messing it up
+      die "display-mode regex must contain at least one capture group to display";
     }
     eval {
       $displayregex = qr/$displayregex/;
@@ -289,8 +289,7 @@ sub makeHtmlPage {
     global_vars       => 1 # needed to make outer-var file_host_dir visible inside per-patient loops for links
   );
 
-
-  # remove clutter: clear out the index files so they won't be explicitly listed in the HTML
+  # remove clutter: filter out the index files so they won't be explicitly listed in the HTML
   # IGV will figure out the index-links itself from the corresponding non-index filename
   my %nonIndexFiles = findDatafilesToDisplay(%bambai_file_index);
 
@@ -442,10 +441,10 @@ sub printReport {
     }
   } elsif ($report_mode eq "full") {
     print "=== Unreadable directories ===\n";
-    print "  $_\n" for (sort @inaccessible_dirs);
+    print join("\n  ", sort @inaccessible_dirs) . "\n";
 
     print "=== Unparseable paths ===\n";
-    print "  $_\n" for (sort @unparseable_paths);
+    print join("\n  ", sort @unparseable_paths) . "\n";
   }
 }
 
