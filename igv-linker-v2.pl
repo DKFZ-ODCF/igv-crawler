@@ -246,13 +246,9 @@ sub getDisplayFileNameFor {
     return $filename;
   } else { # we must have a regex in $displayregex, use it
     # nothing yet
-    return "regex: $filepath";
+    my @captures = ($filepath =~ $displayregex);
+    return join(" > ", @captures)
   }
-
-  # reduce clutter: shorten always-there paths to [project|analysis]
-  #$filepath =~ s|^/icgc/dkfzlsdf/project/|[project] | ;
-  #$filepath =~ s|^/icgc/dkfzlsdf/analysis/|[analysis] | ;
-  #return $filepath
 }
 
 sub getDiskFileNameFor {
