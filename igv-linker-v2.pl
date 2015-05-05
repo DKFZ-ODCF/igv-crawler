@@ -245,9 +245,14 @@ sub getDisplayFileNameFor {
     my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
     return $filename;
   } else { # we must have a regex in $displayregex, use it
-    # nothing yet
+    # example path:  /icgc/dkfzlsdf/analysis/hipo/hipo_035/data_types/ChIPseq_v4/results_per_pid/H035-137M/alignment/H035-137M.cell04.H3.sorted.bam
+    # example regex: /icgc/dkfzlsdf/(analysis|project)/hipo/(hipo_035)/data_types/([-_ \w\d]+)/(?:results_per_pid/)*(.+)
     my @captures = ($filepath =~ $displayregex);
-    return join(" > ", @captures)
+    if (@captures != 0) {
+      return join(" > ", @captures);
+    } else { # paths we can't display nicely, we just display it in all their horrid glory
+      return $filepath
+    }
   }
 }
 
