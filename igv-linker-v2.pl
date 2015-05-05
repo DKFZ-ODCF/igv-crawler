@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+
 #
 # This script scans the specified project folder for
 # folders containing <samplename>.bam + <samplename>.bai
@@ -41,6 +42,7 @@ my @scan_dirs;
 my $pid_regex;
 my $displaymode = "nameonly"; # historical behaviour is filename-only, without dir-path
 my $displayregex;             # parsed version of $displaymode, in case it is a regex
+my $report_mode = "counts";
 #####################################################################################
 
 
@@ -54,14 +56,21 @@ my $displayregex;             # parsed version of $displaymode, in case it is a 
 # Sadly must be global, otherwise the File::find findFilter can't add to it
 my %bambai_file_index = ();
 
+# Global reporting variables #############
+# We keep some counters/lists to see what kinds of trouble we run in to.
+
 # global list of all dirs that where inaccesible to the File::find run
-# 
-# Sadly must be global, otherwise the File::find findFilter can't add to it
+# which users should we 'kindly' suggest to fix permissions?
 my @inaccessible_dirs;
 
+# paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
+my @unparseable_paths;
 
+# End reporting variables####################
+
+
+# Actually do work :-)
 main();
-
 
 
 
@@ -74,7 +83,8 @@ sub parseArgs {
   GetOptions ('project=s'   => \$project_name, # will be used as "the $project_name project", as well as (lowercased) subdir name
               'scandir=s'   => \@scan_dirs,    # where to look for IGV-relevant files
               'pidformat=s' => \$pid_regex,    # the regex used to extract the patient_id from a file path.
-              'display=s'   => \$displaymode   # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
+              'display=s'   => \$displaymode,  # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
+              'report=s'    => \$report_mode   # what to report at end-of-execution: "counts" or "full"
              )
   or die("Error parsing command line arguments");
 
@@ -101,6 +111,8 @@ sub parseArgs {
     die "display mode not recognised, use either \"nameonly\", \"fullpath\" or \"regex=SOMEREGEX\"";
   }
 
+  # sanity check: report_mode
+  die "invalid report mode specified: $report_mode, use either 'counts' or 'full'" unless ( $report_mode eq "counts" or $report_mode eq "full");
 
   # canonicalize + sanity check @scandirs
   #
@@ -140,7 +152,7 @@ sub main {
 
   makeHtmlPage($output_file_path, $link_dir_url, $project_name, %bambai_file_index);
 
-  reportUnreadableDirs();
+  printReport();
 }
 
 
@@ -251,7 +263,8 @@ sub getDisplayFileNameFor {
     if (@captures != 0) {
       return join(" > ", @captures);
     } else { # paths we can't display nicely, we just display it in all their horrid glory
-      return $filepath
+      push @unparseable_paths, $filepath;
+      return $filepath;
     }
   }
 }
@@ -419,12 +432,22 @@ sub writeContentsToFile {
   close (FILE);
 }
 
-sub reportUnreadableDirs {
-  print "Unreadable directories:\n";
-  foreach my $unreadable_dir (sort @inaccessible_dirs) {
-    print "  $unreadable_dir\n";
+sub printReport {
+  print "== After-action report for $project_name ==\n";
+  if ($report_mode eq "counts") {
+    print "unreadable directories: " . scalar @inaccessible_dirs . "\n";
+    if ($displaymode eq 'regex') {
+      print "unparseable paths:      " . scalar @unparseable_paths . "\n";
+    }
+  } elsif ($report_mode eq "full") {
+    print "=== Unreadable directories ===\n";
+    print "  $_\n" for (sort @inaccessible_dirs);
+
+    print "=== Unparseable paths ===\n";
+    print "  $_\n" for (sort @unparseable_paths);
   }
 }
+
 
 # END FUNCTION DEFINITIONS ########################################################
 
