@@ -136,12 +136,9 @@ sub parseArgs {
 sub main {
   my ($link_dir_path, $link_dir_url, $output_file_path) = parseArgs();
 
-  print "Started IGV scanner+linker for project '$project_name'\n";
+  print "Scanning $project_name for IGV-relevant files in:\n";
+  print "  $_\n" for @scan_dirs;
 
-  print "looking for IGV-relevant files in:\n";
-  foreach my $dir (@scan_dirs) {
-    print "  $dir\n";
-  }
   # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
   finddepth( {wanted => \&findFilter, preprocess => \&excludeAndLogUnreadableDirs }, @scan_dirs);
 
@@ -210,11 +207,13 @@ sub clearOldLinksIn {
   print "Clearing out links and empty directories in $dir_to_clear\n";
 
   # sanity, don't let this work on directories that aren't ours
-  die "paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/; # intentionally hardcoding 'links' instead of $link_dir
+  # intentionally hardcoding 'links' instead of $link_dir, so it'll break if future people are careless
+  die "paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/; 
 
   # delete all symlinks in our directory
   system( "find -P $dir_to_clear -mount -depth -type l  -delete" );
   # clear out all directories that are now empty (or contain only empty directories -> '-p')
+  # pipe to /dev/null because this way (-p: delete recursively-empty dirs in one go) produces a lot of "subdir X no longer exists" type-warnings
   system( "find -P $dir_to_clear -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
 }
 
@@ -268,6 +267,7 @@ sub getDisplayFileNameFor {
     }
   }
 }
+
 
 sub getDiskFileNameFor {
   my $filepath = shift;
@@ -387,8 +387,8 @@ sub findFilesWithIndices {
 
 # prepares patient datastructure to insert into template
 #
-# it creates the nested structure for the list-of-patients-with-list-of-their-files
-# formatted as a (nested) list-of-maps, for HTML::Template
+# it creates the nested structure for the list-of-(patients-with-list-of-their-files)
+# formatted as a nested list-of-maps, suitable for HTML::Template
 # [
 #  {
 #    patient_id => "patient_1",
@@ -431,6 +431,7 @@ sub writeContentsToFile {
   print FILE $contents;
   close (FILE);
 }
+
 
 sub printReport {
   print "== After-action report for $project_name ==\n";
@@ -485,13 +486,12 @@ __DATA__
   powered by <a href="http://threepanelsoul.com/2013/12/16/on-perl/">readable perl&trade;</a><br/>
   last updated: <!-- TMPL_VAR NAME=timestamp --><br/>
   generated from files found in:
-  <ul>
-  <!-- TMPL_LOOP NAME=scandirs -->
-    <li><!-- TMPL_VAR NAME=dir --></li><!-- /TMPL_LOOP -->
-  </ul>
+  <ul><!-- TMPL_LOOP NAME=scandirs -->
+    <li><!-- TMPL_VAR NAME=dir --></li>
+  <!-- /TMPL_LOOP --></ul>
 </small></p>
 
-<!-- SIDE BAR MENU: has quick-links to each patient-id header below -->
+<!-- Right-hanging menu: has quick-links to each patient-id header below -->
 <div id="menu" style="
   position: fixed; top: 5px; right: 0px;
   font-size: small;
@@ -507,22 +507,22 @@ __DATA__
   white-space: nowrap;
 ">
 Jump to:
-<ul style="padding-left: 26px;">
-<!-- TMPL_LOOP NAME=patients -->
-<li><a href="#<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></a></li><!-- /TMPL_LOOP -->
-</ul>
+<ul style="padding-left: 26px;"><!-- TMPL_LOOP NAME=patients -->
+  <li><a href="#<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></a></li>
+<!-- /TMPL_LOOP --></ul>
 </div>
 
 <h1>Patient Information</h1>
 <!-- TMPL_LOOP NAME=patients -->
   <h2 id="<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></h2>
-  <ul>
-    <!-- TMPL_LOOP NAME=linked_files -->
-      <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=diskfilename -->">
-          <!-- TMPL_VAR NAME=displayfilename -->
-      </a></li><!-- /TMPL_LOOP -->
-  </ul><!-- /TMPL_LOOP -->
+  <ul><!-- TMPL_LOOP NAME=linked_files -->
+    <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=diskfilename -->">
+        <!-- TMPL_VAR NAME=displayfilename -->
+    </a></li>
+  <!-- /TMPL_LOOP --></ul>
+  <!-- /TMPL_LOOP -->
 
+<p><small>The end, thank you for reading!</small></p>
 </body>
 </html>
 
