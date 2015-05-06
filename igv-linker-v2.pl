@@ -47,19 +47,10 @@ my $displayregex;             # parsed version of $displaymode, in case it is a 
 my $report_mode = "counts";
 #####################################################################################
 
-
-# global list to keep track of all the bam+bai files we have found
-# format:
-# {
-#   'patientId1' => [ '/some/file/path.bam', 'some/file/path.bai', ...],
-#   'patientId2' => [ '/other/file/path.bam', 'some/other/path.bai', ...],
-# }
-#
-# Sadly must be global, otherwise the File::find findFilter can't add to it
-my %bambai_file_index = ();
-
-# Global reporting variables #############
+## Global reporting variables #############
 # We keep some counters/lists to see what kinds of trouble we run in to.
+
+my $total_files_scanned = 0;
 
 # global list of all dirs that where inaccesible to the File::find run
 # which users should we 'kindly' suggest to fix permissions?
@@ -71,7 +62,19 @@ my @undisplayable_paths;
 # paths that we couldn't derive a pid from
 my @pid_undetectable_paths;
 
-# End reporting variables####################
+## End reporting variables####################
+
+
+# THE var: global list to keep track of all the bam+bai files we have found
+# format:
+# {
+#   'patientId1' => [ '/some/file/path.bam', 'some/file/path.bai', ...],
+#   'patientId2' => [ '/other/file/path.bam', 'some/other/path.bai', ...],
+# }
+#
+# Sadly must be global, otherwise the File::find findFilter can't add to it
+my %bambai_file_index = ();
+
 
 
 # Actually do work :-)
@@ -159,6 +162,7 @@ sub main {
 
 
 sub findFilter {
+  $total_files_scanned++;
   my $filename = $File::Find::name;
   return if -d $filename;                     # skip directories
   return unless $filename =~ /(.*)\.ba[im]$/; # skip files that're not a bamfile or a bam-index
@@ -440,6 +444,9 @@ sub writeContentsToFile {
 
 sub printReport {
   print "== After-action report for $project_name ==\n";
+
+  print "total files scanned (ex.unreadable): $total_files_scanned\n";
+
   if ($report_mode eq "counts") {
     print "unreadable directories: " . scalar @inaccessible_dirs . "\n";
     print "undetectable pids:      " . scalar @pid_undetectable_paths . "\n";
