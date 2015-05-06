@@ -64,7 +64,7 @@ my %bambai_file_index = ();
 my @inaccessible_dirs;
 
 # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
-my @unparseable_paths;
+my @undisplayable_paths;
 
 # End reporting variables####################
 
@@ -262,7 +262,7 @@ sub getDisplayFileNameFor {
     if (@captures != 0) {
       return join(" > ", @captures);
     } else { # paths we can't display nicely, we just display it in all their horrid glory
-      push @unparseable_paths, $filepath;
+      push @undisplayable_paths, $filepath;
       return $filepath;
     }
   }
@@ -437,14 +437,14 @@ sub printReport {
   if ($report_mode eq "counts") {
     print "unreadable directories: " . scalar @inaccessible_dirs . "\n";
     if ($displaymode eq 'regex') {
-      print "unparseable paths:      " . scalar @unparseable_paths . "\n";
+      print "unparseable paths:      " . scalar @undisplayable_paths . "\n";
     }
   } elsif ($report_mode eq "full") {
     print "=== Unreadable directories ===\n";
     print join("\n  ", sort @inaccessible_dirs) . "\n";
 
     print "=== Unparseable paths ===\n";
-    print join("\n  ", sort @unparseable_paths) . "\n";
+    print join("\n  ", sort @undisplayable_paths) . "\n";
   }
 }
 
