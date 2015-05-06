@@ -8,6 +8,8 @@ use warnings;
 # All such bam+bai-files will be linked in the specified output dir
 # Additionally it will make a .html index page for users to browse.
 #
+# Some more documentation at xWiki:
+# https://ibios.dkfz.de/xwiki/bin/view/Database/Making+%28OTP%29+BamFiles+available+online
 
 use File::Find;
 use File::Path;
