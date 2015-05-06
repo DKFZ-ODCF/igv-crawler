@@ -66,6 +66,9 @@ my @inaccessible_dirs;
 # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
 my @undisplayable_paths;
 
+# paths that we couldn't derive a pid from
+my @pid_undetectable_paths;
+
 # End reporting variables####################
 
 
@@ -193,6 +196,7 @@ sub derivePatientIdFrom {
     my $patientId = $1;
     return $patientId;
   } else {
+    push @pid_undetectable_paths, $filepath;
     return 'ERROR-NO-MATCH';
   }
 }
@@ -436,12 +440,16 @@ sub printReport {
   print "== After-action report for $project_name ==\n";
   if ($report_mode eq "counts") {
     print "unreadable directories: " . scalar @inaccessible_dirs . "\n";
+    print "undetectable pids:      " . scalar @pid_undetectable_paths . "\n";
     if ($displaymode eq 'regex') {
       print "unparseable paths:      " . scalar @undisplayable_paths . "\n";
     }
   } elsif ($report_mode eq "full") {
     print "=== Unreadable directories ===\n";
     print join("\n  ", sort @inaccessible_dirs) . "\n";
+
+    print "=== Undetectable PIDs ===\n";
+    print join("\n  ", sort @pid_undetectable_paths) . "\n";
 
     print "=== Unparseable paths ===\n";
     print join("\n  ", sort @undisplayable_paths) . "\n";
