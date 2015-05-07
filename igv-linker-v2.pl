@@ -79,6 +79,8 @@ main();
 #
 
 
+# Parses and sanity-checks the command-line parameters.
+# does "die()" when anything smells weird
 sub parseArgs {
   GetOptions ('project=s'   => \$project_name, # will be used as "the $project_name project", as well as (lowercased) subdir name
               'scandir=s'   => \@scan_dirs,    # where to look for IGV-relevant files
@@ -153,6 +155,7 @@ sub main {
 }
 
 
+# Used by File::Find::finddepth in main()
 sub findFilter {
   $total_files_scanned++;
   my $filename = $File::Find::name;
