@@ -459,14 +459,16 @@ sub printShortReport() {
 sub printLongReport {
   print "total files scanned (excl. unreadable): $total_files_scanned\n\n";
 
-  print "=== Unreadable directories ===\n  ";
+  print "=== " . scalar @inaccessible_dirs . " Unreadable directories ===\n  ";
   print join("\n  ", sort @inaccessible_dirs) . "\n";
 
-  print "=== Undetectable PIDs ===\n  ";
+  print "=== " . scalar @pid_undetectable_paths . " Undetectable PIDs ===\n  ";
   print join("\n  ", sort @pid_undetectable_paths) . "\n";
 
-  print "=== Unparseable paths ===\n  ";
-  print join("\n  ", sort @undisplayable_paths) . "\n";
+  if ($display_mode eq 'regex') {
+    print "=== " . scalar @undisplayable_paths . " Unparseable paths ===\n  ";
+    print join("\n  ", sort @undisplayable_paths) . "\n";
+  }
 }
 
 
