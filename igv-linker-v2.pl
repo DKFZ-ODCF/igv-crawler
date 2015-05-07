@@ -144,7 +144,11 @@ sub main {
   print "  $_\n" for @scan_dirs;
 
   # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
-  finddepth( {wanted => \&findFilter, preprocess => \&excludeAndLogUnreadableDirs }, @scan_dirs);
+  finddepth( {
+      preprocess => \&excludeAndLogUnreadableDirs,
+      wanted => \&findFilter,
+      follow => 1, follow_skip => 2           # follow symlinks, needed for Medulloblastoma (which is a rats nest of symlinks, some pointing at shared folders)
+  }, @scan_dirs);
 
   clearOldLinksIn($link_dir_path);
 
