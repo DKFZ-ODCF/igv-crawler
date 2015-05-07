@@ -40,30 +40,22 @@ my $link_dir = "links";
 # COMMAND LINE PARAMETERS
 #
 my $project_name = 'demo';    # defaults to demo-settings, to not-break prod when someone forgets to specify
-my @scan_dirs;
-my $pid_regex;
-my $displaymode = "nameonly"; # historical behaviour is filename-only, without dir-path
+my @scan_dirs;                # list of directories that will be scanned
+my $pid_regex;                # every file-path is run through this regex to extract the PID (pid-pattern MUST be first capture group)
+my $displaymode = "nameonly"; # what to show in the HTML-file; defaults to historical behaviour: show filename without parent dir-path
 my $displayregex;             # parsed version of $displaymode, in case it is a regex
-my $report_mode = "counts";
+my $report_mode = "counts";   # what to report? "full" > print complete lists of paths, "counts" > only print number of files/paths
 #####################################################################################
 
-## Global reporting variables #############
+#####################################################################################
+# REPORTING VARIABLES
 # We keep some counters/lists to see what kinds of trouble we run in to.
-
-my $total_files_scanned = 0;
-
-# global list of all dirs that where inaccesible to the File::find run
-# which users should we 'kindly' suggest to fix permissions?
-my @inaccessible_dirs;
-
-# paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
-my @undisplayable_paths;
-
-# paths that we couldn't derive a pid from
-my @pid_undetectable_paths;
-
-## End reporting variables####################
-
+#
+my $total_files_scanned = 0;  # total number of files seen by the find-filter (excludes unreadable directories)
+my @inaccessible_dirs;        # global list of all dirs that where inaccesible to the File::find run ; which users should we 'kindly' suggest to fix permissions?
+my @undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
+my @pid_undetectable_paths;   # paths that we couldn't derive a pid from
+#####################################################################################
 
 # THE var: global list to keep track of all the bam+bai files we have found
 # format:
