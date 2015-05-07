@@ -440,24 +440,33 @@ sub writeContentsToFile {
 sub printReport {
   print "== After-action report for $project_name ==\n";
 
-  print "total files scanned (ex.unreadable): $total_files_scanned\n";
-
   if ($report_mode eq "counts") {
-    print "unreadable directories: " . scalar @inaccessible_dirs . "\n";
-    print "undetectable pids:      " . scalar @pid_undetectable_paths . "\n";
-    if ($displaymode eq 'regex') {
-      print "unparseable paths:      " . scalar @undisplayable_paths . "\n";
-    }
+    printShortReport();
   } elsif ($report_mode eq "full") {
-    print "=== Unreadable directories ===\n";
-    print join("\n  ", sort @inaccessible_dirs) . "\n";
-
-    print "=== Undetectable PIDs ===\n";
-    print join("\n  ", sort @pid_undetectable_paths) . "\n";
-
-    print "=== Unparseable paths ===\n";
-    print join("\n  ", sort @undisplayable_paths) . "\n";
+    printLongReport();
   }
+}
+
+sub printShortReport() {
+  print "total files scanned (excl. unreadable): $total_files_scanned\n";
+  print "unreadable directories: " . scalar @inaccessible_dirs . "\n";
+  print "undetectable pids:      " . scalar @pid_undetectable_paths . "\n";
+  if ($displaymode eq 'regex') {
+    print "unparseable paths:      " . scalar @undisplayable_paths . "\n";
+  }
+}
+
+sub printLongReport {
+  print "total files scanned (excl. unreadable): $total_files_scanned\n\n";
+
+  print "=== Unreadable directories ===\n  ";
+  print join("\n  ", sort @inaccessible_dirs) . "\n";
+
+  print "=== Undetectable PIDs ===\n  ";
+  print join("\n  ", sort @pid_undetectable_paths) . "\n";
+
+  print "=== Unparseable paths ===\n  ";
+  print join("\n  ", sort @undisplayable_paths) . "\n";
 }
 
 
