@@ -476,11 +476,12 @@ sub printLongReport {
 
 sub printWithHeader {
   my $header = shift;
-  my $count = scalar @_;
-  my $indent = "  ";
+  my @list = @_;
+  my $count = scalar @list;
 
+  my $indent = "  ";
   print "=== $count $header ===\n" .
-  "$indent" . join("\n$indent", sort @_) . "\n";
+  "$indent" . join("\n$indent", sort @list) . "\n";
 }
 
 
