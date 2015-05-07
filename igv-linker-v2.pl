@@ -157,8 +157,9 @@ sub main {
 
 # Used by File::Find::finddepth in main()
 sub findFilter {
-  $total_files_scanned++;
+  $total_files_scanned++;  # log for report
   my $filename = $File::Find::name;
+
   return if -d $filename;                     # skip directories
   return unless $filename =~ /(.*)\.ba[im]$/; # skip files that're not a bamfile or a bam-index
 
@@ -169,7 +170,7 @@ sub excludeAndLogUnreadableDirs {
   # thank you http://www.perlmonks.org/?node_id=1023278
   grep {
     if ( -d $_ and !-r $_ ) {
-      push @inaccessible_dirs, "$File::Find::dir/$_";
+      push @inaccessible_dirs, "$File::Find::dir/$_";  # log for report
       0;    # don't pass on inaccessible dir
     } else {
       1;
@@ -197,7 +198,7 @@ sub derivePatientIdFrom {
     my $patient_id = $1;
     return $patient_id;
   } else {
-    push @pid_undetectable_paths, $filepath;
+    push @pid_undetectable_paths, $filepath;  # log for report
     return 'ERROR-NO-MATCH';
   }
 }
@@ -212,13 +213,13 @@ sub clearOldLinksIn {
   print "Clearing out links and empty directories in $dir_to_clear\n";
 
   # sanity, don't let this work on directories that aren't ours
-  # intentionally hardcoding 'links' instead of $link_dir, so it'll break if future people are careless
-  die "paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/; 
+  # intentionally hardcoding 'links' instead of $link_dir, so it'll break if future people are careless (recursive "find -delete" is NASTY)
+  die "SAFETY: paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/;
 
   # delete all symlinks in our directory
   system( "find -P $dir_to_clear -mount -depth -type l  -delete" );
   # clear out all directories that are now empty (or contain only empty directories -> '-p')
-  # pipe to /dev/null because this way (-p: delete recursively-empty dirs in one go) produces a lot of "subdir X no longer exists" type-warnings
+  # pipe to /dev/null because this way (-p: delete recursively-empty dirs in one go) produces a lot of "subdir X no longer exists"-type warnings
   system( "find -P $dir_to_clear -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
 }
 
@@ -267,7 +268,7 @@ sub getDisplayFileNameFor {
     if (@captures != 0) {
       return join(" > ", @captures);
     } else { # paths we can't display nicely, we just display it in all their horrid glory
-      push @undisplayable_paths, $filepath;
+      push @undisplayable_paths, $filepath;  # log for report
       return $filepath;
     }
   }
@@ -311,7 +312,6 @@ sub makeHtmlPage {
     patients      => $formatted_patients,
     scandirs      => $formatted_scandirs
   );
-
 
   writeContentsToFile($template->output(), $output_file);
 }
@@ -431,7 +431,7 @@ sub writeContentsToFile {
   my $filename = shift;
 
   print "writing contents to $filename\n";
-  open (FILE, "> $filename") || die "problem opening $filename\n";
+  open (FILE, "> $filename") or die "problem opening $filename\n";
   print FILE $contents;
   close (FILE);
 }
