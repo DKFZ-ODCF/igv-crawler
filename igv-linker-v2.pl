@@ -42,8 +42,8 @@ my $link_dir = "links";
 my $project_name = 'demo';    # defaults to demo-settings, to not-break prod when someone forgets to specify
 my @scan_dirs;                # list of directories that will be scanned
 my $pid_regex;                # every file-path is run through this regex to extract the PID (pid-pattern MUST be first capture group)
-my $displaymode = "nameonly"; # what to show in the HTML-file; defaults to historical behaviour: show filename without parent dir-path
-my $displayregex;             # parsed version of $displaymode, in case it is a regex
+my $display_mode = "nameonly"; # what to show in the HTML-file; defaults to historical behaviour: show filename without parent dir-path
+my $display_regex;             # parsed version of $display_mode, in case it is a regex
 my $report_mode = "counts";   # what to report? "full" > print complete lists of paths, "counts" > only print number of files/paths
 #####################################################################################
 
@@ -85,7 +85,7 @@ sub parseArgs {
   GetOptions ('project=s'   => \$project_name, # will be used as "the $project_name project", as well as (lowercased) subdir name
               'scandir=s'   => \@scan_dirs,    # where to look for IGV-relevant files
               'pidformat=s' => \$pid_regex,    # the regex used to extract the patient_id from a file path.
-              'display=s'   => \$displaymode,  # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
+              'display=s'   => \$display_mode,  # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
               'report=s'    => \$report_mode   # what to report at end-of-execution: "counts" or "full"
              )
   or die("Error parsing command line arguments");
@@ -97,19 +97,19 @@ sub parseArgs {
   die "Didn't specifify pid-format, cannot extract patient ID from file paths, aborting!" if ($pid_regex eq "");
 
   # sanity check: display mode
-  if ($displaymode =~ /^regex=(.*)/) {
-    $displaymode = 'regex';    
-    $displayregex = $1;
-    if (index($displayregex, '(') == -1) {   # yes, a crafty user could fool this with (?:), but then you're intentionally messing it up
+  if ($display_mode =~ /^regex=(.*)/) {
+    $display_mode = 'regex';
+    $display_regex = $1;
+    if (index($display_regex, '(') == -1) {   # yes, a crafty user could fool this with (?:), but then you're intentionally messing it up
       die "display-mode regex must contain at least one capture group to display";
     }
     eval {
-      $displayregex = qr/$displayregex/;
+      $display_regex = qr/$display_regex/;
     } or do {
       die "error encountered while parsing display-mode regex:\n$@";
     };
-  } elsif ($displaymode ne 'nameonly' and
-           $displaymode ne 'fullpath') {
+  } elsif ($display_mode ne 'nameonly' and
+           $display_mode ne 'fullpath') {
     die "display mode not recognised, use either \"nameonly\", \"fullpath\" or \"regex=SOMEREGEX\"";
   }
 
@@ -181,11 +181,11 @@ sub addToIndex {
   my $file = shift;
 
   # extract the patient ID from the identifier
-  my $patientId = derivePatientIdFrom($file);
-  if ($patientId ne 'ERROR-NO-MATCH') {
+  my $patient_id = derivePatientIdFrom($file);
+  if ($patient_id ne 'ERROR-NO-MATCH') {
     # append the file-path to our list of files-per-patient
-    $bambai_file_index{$patientId} = [] unless $bambai_file_index{$patientId};
-    push @{ $bambai_file_index{$patientId} }, $file;
+    $bambai_file_index{$patient_id} = [] unless $bambai_file_index{$patient_id};
+    push @{ $bambai_file_index{$patient_id} }, $file;
   }
 }
 
@@ -194,8 +194,8 @@ sub addToIndex {
 sub derivePatientIdFrom {
   my $filepath = shift;
   if ($filepath =~ /$pid_regex/) {
-    my $patientId = $1;
-    return $patientId;
+    my $patient_id = $1;
+    return $patient_id;
   } else {
     push @pid_undetectable_paths, $filepath;
     return 'ERROR-NO-MATCH';
@@ -225,17 +225,17 @@ sub clearOldLinksIn {
 
 sub makeAllFileSystemLinks {
   my $link_target_dir = shift;
-  my %files_per_patientId = @_;
+  my %files_per_patient_id = @_;
 
   print "creating links in $link_target_dir\n";
 
-  foreach my $patientId (keys %files_per_patientId) {
-    my $newDir = makeDirectoryFor($link_target_dir, $patientId);
-    foreach my $originalFile (@{ $files_per_patientId{$patientId} }) {
-      my $filename = getDiskFileNameFor($originalFile);
+  foreach my $patient_id (keys %files_per_patient_id) {
+    my $public_dir = makeDirectoryFor($link_target_dir, $patient_id);
+    foreach my $original_file (@{ $files_per_patient_id{$patient_id} }) {
+      my $filename = getDiskFileNameFor($original_file);
 
-      my $newPath = catfile($newDir, $filename);
-      symlink $originalFile, $newPath;
+      my $public_path = catfile($public_dir, $filename);
+      symlink $original_file, $public_path;
     }
   }
 }
@@ -243,9 +243,9 @@ sub makeAllFileSystemLinks {
 
 sub makeDirectoryFor {
   my $link_target_dir = shift;
-  my $patientId = shift;
+  my $patient_id = shift;
 
-  my $path = catfile($link_target_dir, $patientId);
+  my $path = catfile($link_target_dir, $patient_id);
   mkpath($path) unless -d $path;
 
   return $path;
@@ -255,15 +255,15 @@ sub makeDirectoryFor {
 sub getDisplayFileNameFor {
   my $filepath = shift;
 
-  if ($displaymode eq "fullpath") {
+  if ($display_mode eq "fullpath") {
     return $filepath;
-  } elsif ($displaymode eq "nameonly") {
+  } elsif ($display_mode eq "nameonly") {
     my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
     return $filename;
-  } else { # we must have a regex in $displayregex, use it
+  } else { # we must have a regex in $display_regex, use it
     # example path:  /icgc/dkfzlsdf/analysis/hipo/hipo_035/data_types/ChIPseq_v4/results_per_pid/H035-137M/alignment/H035-137M.cell04.H3.sorted.bam
     # example regex: /icgc/dkfzlsdf/(analysis|project)/hipo/(hipo_035)/data_types/([-_ \w\d]+)/(?:results_per_pid/)*(.+)
-    my @captures = ($filepath =~ $displayregex);
+    my @captures = ($filepath =~ $display_regex);
     if (@captures != 0) {
       return join(" > ", @captures);
     } else { # paths we can't display nicely, we just display it in all their horrid glory
@@ -285,7 +285,7 @@ sub makeHtmlPage {
   my $output_file = shift;
   my $file_host_dir = shift;
   my $project_name = shift;
-  my %files_per_patientId = @_;
+  my %files_per_patient_id = @_;
 
   # Get the HTML template
   my $html = do { local $/; <DATA> };
@@ -330,15 +330,15 @@ sub findDatafilesToDisplay {
   my %original = @_;
   my %filtered = ();
 
-  foreach my $patientId (keys %original) {
+  foreach my $patient_id (keys %original) {
     ### meaningful temp names
-    my @all_files = sort @{ $original{ $patientId }};
+    my @all_files = sort @{ $original{ $patient_id }};
 
     my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     @all_files);
     my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', @all_files);
 
     # store result
-    @{ $filtered{ $patientId } } = sort (@bams_having_bais, @bams_having_bambais);
+    @{ $filtered{ $patient_id } } = sort (@bams_having_bais, @bams_having_bambais);
   }
 
   return %filtered;
@@ -451,7 +451,7 @@ sub printShortReport() {
   print "total files scanned (excl. unreadable): $total_files_scanned\n";
   print "unreadable directories: " . scalar @inaccessible_dirs . "\n";
   print "undetectable pids:      " . scalar @pid_undetectable_paths . "\n";
-  if ($displaymode eq 'regex') {
+  if ($display_mode eq 'regex') {
     print "unparseable paths:      " . scalar @undisplayable_paths . "\n";
   }
 }
