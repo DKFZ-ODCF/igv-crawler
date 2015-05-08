@@ -166,7 +166,9 @@ sub findFilter {
   $total_files_scanned++;  # log for report
   my $filename = $File::Find::name;
 
+  # criteria for exclusion
   return if -d $filename;                     # skip directories
+  return if -z $filename;                     # skip empty/zero-size files
   return unless $filename =~ /(.*)\.ba[im]$/; # skip files that're not a bamfile or a bam-index
 
   addToIndex($filename);
