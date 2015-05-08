@@ -385,13 +385,13 @@ sub findFilesWithIndices {
   #   (i.e. the datafile attached to each found-index-file, thanks to the 'inverted' key,value from before)
   #   this immediately gives us a list of all datafiles which have a corresponding indexfiles
   my @data_having_index = delete @expected_indices{@found_indices};
+  # TODO: figure out which found-indices don't occur in @expected_indices, to store as @orphaned_indices
 
   # %expected_indices now contains the hash { missing-index-file => found-data-file }
   push @files_without_indices, values %expected_indices;
 
   # remove undefs resulting from leftover index-files whose data-file was removed/not-found
   # (removing non-existant keys returns an undef)
-  push @orphaned_indices, grep { !defined } @data_having_index;
   @data_having_index = grep { defined } @data_having_index;
 
   return @data_having_index;
@@ -473,7 +473,7 @@ sub printLongReport {
   printWithHeader("unreadable directories", @inaccessible_dirs);
   printWithHeader("undetectable PIDs", @pid_undetectable_paths);
   printWithHeader("files without index", @files_without_indices);
-  printWithHeader("orphaned index files", @orphaned_indices);
+#  printWithHeader("orphaned index files", @orphaned_indices); # skip until I figure out how to actually populate this
 
   printWithHeader("Unparseable paths", @undisplayable_paths) if $display_mode eq 'regex';
 }
