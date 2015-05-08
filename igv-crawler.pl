@@ -66,7 +66,7 @@ my @orphaned_indices;         # leftover index-files we found, whose datafile wa
 #   'patientId2' => [ '/other/file/path.bam', 'some/other/path.bai', ...],
 # }
 #
-# Sadly must be global, otherwise the File::find findFilter can't add to it
+# Sadly must be global, otherwise the File::find callback (igvFileFilter) can't add to it
 my %bambai_file_index = ();
 
 
@@ -146,7 +146,7 @@ sub main {
   # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
   finddepth( {
       preprocess => \&excludeAndLogUnreadableDirs,
-      wanted => \&findFilter,
+      wanted => \&igvFileFilter,
       follow => 1, follow_skip => 2           # follow symlinks, needed for Medulloblastoma (which is a rats nest of symlinks, some pointing at shared folders)
   }, @scan_dirs);
 
@@ -162,7 +162,7 @@ sub main {
 
 
 # Used by File::Find::finddepth in main()
-sub findFilter {
+sub igvFileFilter {
   $total_files_scanned++;  # log for report
   my $filename = $File::Find::name;
 
@@ -171,6 +171,7 @@ sub findFilter {
   return if -z $filename;                     # skip empty/zero-size files
   return unless $filename =~ /(.*)\.ba[im]$/; # skip files that're not a bamfile or a bam-index
 
+  # if we haven't bailed by now, apparently we want this file :-)
   addToIndex($filename);
 }
 
