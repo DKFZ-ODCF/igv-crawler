@@ -52,6 +52,7 @@ my $report_mode = "counts";   # what to report? "full" > print complete lists of
 # We keep some counters/lists to see what kinds of trouble we run in to.
 #
 my $total_files_scanned = 0;  # total number of files seen by the find-filter (excludes unreadable directories)
+my $total_files_displayed =0; # number of files that are displayed
 my @inaccessible_dirs;        # global list of all dirs that where inaccesible to the File::find run ; which users should we 'kindly' suggest to fix permissions?
 my @undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
 my @pid_undetectable_paths;   # paths that we couldn't derive a pid from
@@ -350,6 +351,7 @@ sub findDatafilesToDisplay {
     @{ $filtered{ $patient_id } } = sort (@bams_having_bais, @bams_having_bambais);
   }
 
+  $total_files_displayed = scalar %filtered;
   return %filtered;
 }
 
@@ -461,17 +463,19 @@ sub printReport {
 
 
 sub printShortReport() {
-  print "total files scanned (excl. unreadable): " . $total_files_scanned . "\n" .
-        "unreadable directories:                 " . scalar @inaccessible_dirs . "\n" .
+  print "total files scanned (excl. unreadable): " . $total_files_scanned           . "\n" .
+        "total files displayed:                  " . $total_files_displayed         . "\n" .
+        "unreadable directories:                 " . scalar @inaccessible_dirs      . "\n" .
         "undetectable pids:                      " . scalar @pid_undetectable_paths . "\n" .
-        "files skipped for missing index:        " . scalar @files_without_indices . "\n";
+        "files skipped for missing index:        " . scalar @files_without_indices  . "\n";
 
-  print "unparseable paths:                      " . scalar @undisplayable_paths . "\n" if $display_mode eq 'regex';
+  print "unparseable paths:                      " . scalar @undisplayable_paths    . "\n" if $display_mode eq 'regex';
 
 }
 
 sub printLongReport {
-  print "total files scanned (excl. unreadable): $total_files_scanned\n\n";
+  print "total files scanned (excl. unreadable): $total_files_scanned\n" .
+        "total files displayed:                  $total_files_displayed\n\n";
 
   printWithHeader("unreadable directories", @inaccessible_dirs);
   printWithHeader("undetectable PIDs", @pid_undetectable_paths);
