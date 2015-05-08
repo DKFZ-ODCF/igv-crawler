@@ -351,7 +351,7 @@ sub findDatafilesToDisplay {
     @{ $filtered{ $patient_id } } = sort (@bams_having_bais, @bams_having_bambais);
   }
 
-  $total_files_displayed = scalar %filtered;
+  $total_files_displayed = scalar keys %filtered;
   return %filtered;
 }
 
