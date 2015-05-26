@@ -168,9 +168,9 @@ sub igvFileFilter {
   my $filename = $File::Find::name;
 
   # criteria for exclusion
-  return if -d $filename;                     # skip directories
-  return if -z $filename;                     # skip empty/zero-size files
-  return unless $filename =~ /(.*)\.ba[im]$/; # skip files that're not a bamfile or a bam-index
+  return undef if -d $filename;                  # skip directories
+  return undef if -z $filename;                  # skip empty/zero-size files
+  return undef if $filename !~ /.*\.ba[im]$/;    # skip files that're not a bamfile or a bam-index
 
   # if we haven't bailed by now, apparently we want this file :-)
   addToIndex($filename);
@@ -381,7 +381,7 @@ sub findFilesWithIndices {
 
     # 'return' map k,v pair
     # NOTE: key,value swapped in counterintuitive way for cleverness below
-    { $expected_index => $found_data}
+    {$expected_index => $found_data}
   } @found_data;
 
   # finally: be clever :-)
@@ -422,21 +422,21 @@ sub formatPatientDataForTemplate {
   my %files_per_pid = @_;
 
   # sorry for the next unreadable part!
-  return [
+  return [ map {
     # outer 'list' of patient + linked-files
-    map {{
-        patient_id => $_ ,
-
+    my $pid = $_;
+    {
+      patient_id => $pid,
+      linked_files  => [ map {
         # inner 'list' of filenames
-        linked_files => [
-          map {{
-            diskfilename    => getDiskFileNameFor($_),
-            displayfilename => getDisplayFileNameFor($_)
-          }} @{$files_per_pid{$_}}
-        ]
-
-    }} sort keys %files_per_pid
-  ];
+        my $filename = $_;
+        {
+          diskfilename    => getDiskFileNameFor($filename),
+          displayfilename => getDisplayFileNameFor($filename)
+        }
+      } @{$files_per_pid{$pid}} ]
+    }
+  } (sort keys %files_per_pid) ];
 }
 
 
@@ -492,7 +492,7 @@ sub printWithHeader {
 
   my $indent = "  ";
   print "=== $count $header ===\n" .
-  "$indent" . join("\n$indent", sort @list) . "\n";
+        "$indent" . join("\n$indent", sort @list) . "\n";
 }
 
 
