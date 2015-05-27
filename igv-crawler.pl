@@ -84,7 +84,7 @@ main();
 
 # Parses and sanity-checks the command-line parameters.
 # does "die()" when anything smells weird
-sub parseArgs {
+sub parseArgs () {
   GetOptions ('project=s'   => \$project_name, # will be used as "the $project_name project", as well as (lowercased) subdir name
               'scandir=s'   => \@scan_dirs,    # where to look for IGV-relevant files
               'pidformat=s' => \$pid_regex,    # the regex used to extract the patient_id from a file path.
@@ -163,7 +163,7 @@ sub main {
 
 
 # Used by File::Find::finddepth in main()
-sub igvFileFilter {
+sub igvFileFilter () {
   $total_files_scanned++;  # log for report
   my $filename = $File::Find::name;
 
@@ -176,7 +176,7 @@ sub igvFileFilter {
   addToIndex($filename);
 }
 
-sub excludeAndLogUnreadableDirs {
+sub excludeAndLogUnreadableDirs () {
   # thank you http://www.perlmonks.org/?node_id=1023278
   grep {
     if ( -d $_ and !-r $_ ) {
@@ -188,22 +188,23 @@ sub excludeAndLogUnreadableDirs {
   } @_;
 }
 
-sub addToIndex {
-  my $file = shift;
+sub addToIndex ($) {
+  my ($file) = @_;
 
   # extract the patient ID from the identifier
   my $patient_id = derivePatientIdFrom($file);
   if ($patient_id ne 'ERROR-NO-MATCH') {
     # append the file-path to our list of files-per-patient
-    $bambai_file_index{$patient_id} = [] unless $bambai_file_index{$patient_id};
+    $bambai_file_index{$patient_id} = [] unless defined $bambai_file_index{$patient_id};
     push @{ $bambai_file_index{$patient_id} }, $file;
   }
 }
 
 
 # Function to derive a patientID from a filename
-sub derivePatientIdFrom {
-  my $filepath = shift;
+sub derivePatientIdFrom ($) {
+  my ($filepath) = @_;
+
   if ($filepath =~ /$pid_regex/) {
     my $patient_id = $1;
     return $patient_id;
@@ -217,8 +218,8 @@ sub derivePatientIdFrom {
 # recursively clears all links from a directory, and then all empty dirs.
 # This should normally clear a link-dir made by this script, but nothing else.
 # sanity-checks the provided directory to match /public-otp-files/*/links, to avoid "find -delete" mishaps
-sub clearOldLinksIn {
-  my $dir_to_clear = shift;
+sub clearOldLinksIn ($) {
+  my ($dir_to_clear) = @_;
 
   print "Clearing out links and empty directories in $dir_to_clear\n";
 
@@ -227,16 +228,15 @@ sub clearOldLinksIn {
   die "SAFETY: paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/;
 
   # delete all symlinks in our directory
-  system( "find -P $dir_to_clear -mount -depth -type l  -delete" );
+  system( "find -P '$dir_to_clear' -mount -depth -type l  -delete" );
   # clear out all directories that are now empty (or contain only empty directories -> '-p')
   # pipe to /dev/null because this way (-p: delete recursively-empty dirs in one go) produces a lot of "subdir X no longer exists"-type warnings
-  system( "find -P $dir_to_clear -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
+  system( "find -P '$dir_to_clear' -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
 }
 
 
-sub makeAllFileSystemLinks {
-  my $link_target_dir = shift;
-  my %files_per_patient_id = @_;
+sub makeAllFileSystemLinks ($%) {
+  my ($link_target_dir, %files_per_patient_id) = @_;
 
   print "creating links in $link_target_dir\n";
 
@@ -252,9 +252,8 @@ sub makeAllFileSystemLinks {
 }
 
 
-sub makeDirectoryFor {
-  my $link_target_dir = shift;
-  my $patient_id = shift;
+sub makeDirectoryFor ($$) {
+  my ($link_target_dir, $patient_id) = @_;
 
   my $path = catfile($link_target_dir, $patient_id);
   mkpath($path) unless -d $path;
@@ -263,20 +262,23 @@ sub makeDirectoryFor {
 }
 
 
-sub getDisplayFileNameFor {
-  my $filepath = shift;
+sub getDisplayFileNameFor ($) {
+  my ($filepath) = @_;
 
   if ($display_mode eq "fullpath") {
     return $filepath;
+
   } elsif ($display_mode eq "nameonly") {
     my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
     return $filename;
+
   } else { # we must have a regex in $display_regex, use it
     # example path:  /icgc/dkfzlsdf/analysis/hipo/hipo_035/data_types/ChIPseq_v4/results_per_pid/H035-137M/alignment/H035-137M.cell04.H3.sorted.bam
     # example regex: /icgc/dkfzlsdf/(analysis|project)/hipo/(hipo_035)/data_types/([-_ \w\d]+)/(?:results_per_pid/)*(.+)
     my @captures = ($filepath =~ $display_regex);
-    if (@captures != 0) {
+    if (scalar @captures != 0) {
       return join(" > ", @captures);
+
     } else { # paths we can't display nicely, we just display it in all their horrid glory
       push @undisplayable_paths, $filepath;  # log for report
       return $filepath;
@@ -285,18 +287,16 @@ sub getDisplayFileNameFor {
 }
 
 
-sub getDiskFileNameFor {
-  my $filepath = shift;
+sub getDiskFileNameFor ($) {
+  my ($filepath) = @_;
+
   my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
   return $filename;
 }
 
 
-sub makeHtmlPage {
-  my $output_file = shift;
-  my $file_host_dir = shift;
-  my $project_name = shift;
-  my %files_per_patient_id = @_;
+sub makeHtmlPage ($$$%) {
+  my ($output_file, $file_host_dir, $project_name, %files_per_patient_id) = @_;
 
   # Get the HTML template
   my $html = do { local $/; <DATA> };
@@ -310,7 +310,7 @@ sub makeHtmlPage {
   my %nonIndexFiles = findDatafilesToDisplay(%bambai_file_index);
 
   my $formatted_patients = formatPatientDataForTemplate(%nonIndexFiles);
-  my $formatted_scandirs = [ map {{dir => $_}} @scan_dirs ];
+  my $formatted_scandirs = [ map { {dir => $_} } @scan_dirs ];
   # for some reason, writing 'localtime' directly in the param()-map didn't work, so we need a temp-var
   my $timestamp = localtime;
 
@@ -336,8 +336,9 @@ sub makeHtmlPage {
 # the index-files themselves (.bai's, .bam.bai's) are not included in the html-output
 # because by this point, the symlinks already exist, and IGV will derive
 # the index-file-link from the data-file-link
-sub findDatafilesToDisplay {
-  my %original = @_;
+sub findDatafilesToDisplay (%) {
+  my (%original) = @_;
+
   my %filtered = ();
 
   foreach my $patient_id (keys %original) {
@@ -360,13 +361,13 @@ sub findDatafilesToDisplay {
 # i.e. given a list of found datafiles+indexfiles
 # returns the list of datafiles that have an indexfile in the input
 # effectively removing both indexless-datafiles AND the indexfiles from the input
-sub findFilesWithIndices {
+sub findFilesWithIndices ($$@) {
   # meaningful temp names
-  my $data_extension = shift; # e.g. .bam
-  my $data_pattern = quotemeta($data_extension) . '$';
-  my $index_extension = shift; # e.g .bai or .bam.bai
+  #       .bam         .bam.bai || .bai  [....]   
+  my ($data_extension, $index_extension, @all_files) = @_;
+
+  my $data_pattern  = quotemeta($data_extension)  . '$';
   my $index_pattern = quotemeta($index_extension) . '$';
-  my @all_files = @_;
 
   # first, gather up our datafiles and indexfiles
   my @found_data    = grep { $_ =~ /$data_pattern/  } @all_files;
@@ -418,7 +419,7 @@ sub findFilesWithIndices {
 #  },
 # ...]
 #
-sub formatPatientDataForTemplate {
+sub formatPatientDataForTemplate (%) {
   my %files_per_pid = @_;
 
   # sorry for the next unreadable part!
@@ -440,9 +441,8 @@ sub formatPatientDataForTemplate {
 }
 
 
-sub writeContentsToFile {
-  my $contents = shift;
-  my $filename = shift;
+sub writeContentsToFile ($$) {
+  my ($contents, $filename) = @_;
 
   print "writing contents to $filename\n";
   open (FILE, "> $filename") or die "problem opening $filename\n";
@@ -451,7 +451,7 @@ sub writeContentsToFile {
 }
 
 
-sub printReport {
+sub printReport () {
   print "== After-action report for $project_name ==\n";
 
   if ($report_mode eq "counts") {
@@ -462,7 +462,7 @@ sub printReport {
 }
 
 
-sub printShortReport() {
+sub printShortReport () {
   print "total files scanned (excl. unreadable): " . $total_files_scanned           . "\n" .
         "total files displayed:                  " . $total_files_displayed         . "\n" .
         "unreadable directories:                 " . scalar @inaccessible_dirs      . "\n" .
@@ -473,7 +473,7 @@ sub printShortReport() {
 
 }
 
-sub printLongReport {
+sub printLongReport () {
   print "total files scanned (excl. unreadable): $total_files_scanned\n" .
         "total files displayed:                  $total_files_displayed\n\n";
 
@@ -485,9 +485,8 @@ sub printLongReport {
   printWithHeader("Unparseable paths", @undisplayable_paths) if $display_mode eq 'regex';
 }
 
-sub printWithHeader {
-  my $header = shift;
-  my @list = @_;
+sub printWithHeader ($@) {
+  my ($header, @list) = @_;
   my $count = scalar @list;
 
   my $indent = "  ";
