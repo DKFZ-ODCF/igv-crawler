@@ -475,8 +475,8 @@ sub printReport () {
 
 sub printShortReport () {
   print "total files scanned (excl. unreadable): " .        $total_files_scanned    . "\n" .
-        "total files displayed:                  " .        $total_files_displayed  . "\n" .
         "total patients displayed:               " .        $total_pids_displayed   . "\n" .
+        "total files displayed:                  " .        $total_files_displayed  . "\n" .
         "unreadable directories:                 " . scalar @inaccessible_dirs      . "\n" .
         "undetectable pids:                      " . scalar @pid_undetectable_paths . "\n" .
         "files skipped for missing index:        " . scalar @files_without_indices  . "\n";
@@ -487,8 +487,8 @@ sub printShortReport () {
 
 sub printLongReport () {
   print "total files scanned (excl. unreadable): $total_files_scanned\n" .
-        "total files displayed:                  $total_files_displayed\n" .
-        "total patients displayed:               $total_pids_displayed\n";
+        "total patients displayed:               $total_pids_displayed\n" .
+        "total files displayed:                  $total_files_displayed\n";
 
   printWithHeader("unreadable directories", @inaccessible_dirs);
   printWithHeader("undetectable PIDs", @pid_undetectable_paths);
