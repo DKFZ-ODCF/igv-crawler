@@ -53,6 +53,7 @@ my $report_mode = "counts";   # what to report? "full" > print complete lists of
 #
 my $total_files_scanned = 0;  # total number of files seen by the find-filter (excludes unreadable directories)
 my $total_files_displayed =0; # number of files that are displayed
+my $total_pids_displayed =0;  # number of distinct patients all the files belong to
 my @inaccessible_dirs;        # global list of all dirs that where inaccesible to the File::find run ; which users should we 'kindly' suggest to fix permissions?
 my @undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
 my @pid_undetectable_paths;   # paths that we couldn't derive a pid from
@@ -348,11 +349,14 @@ sub findDatafilesToDisplay (%) {
     my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     @all_files);
     my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', @all_files);
 
+    my @bams_to_show = sort (@bams_having_bais, @bams_having_bambais);
+    $total_files_displayed += (scalar @bams_to_show);  # log for report
+
     # store result
-    @{ $filtered{ $patient_id } } = sort (@bams_having_bais, @bams_having_bambais);
+    @{ $filtered{ $patient_id } } = @bams_to_show;
   }
 
-  $total_files_displayed = scalar keys %filtered;
+  $total_pids_displayed = scalar keys %filtered;       # log for report
   return %filtered;
 }
 
@@ -394,7 +398,7 @@ sub findFilesWithIndices ($$@) {
   # TODO: figure out which found-indices don't occur in @expected_indices, to store as @orphaned_indices
 
   # %expected_indices now contains the hash { missing-index-file => found-data-file }
-  push @files_without_indices, values %expected_indices;
+  #push @files_without_indices, values %expected_indices;
 
   # remove undefs resulting from leftover index-files whose data-file was removed/not-found
   # (removing non-existant keys returns an undef)
@@ -463,8 +467,9 @@ sub printReport () {
 
 
 sub printShortReport () {
-  print "total files scanned (excl. unreadable): " . $total_files_scanned           . "\n" .
-        "total files displayed:                  " . $total_files_displayed         . "\n" .
+  print "total files scanned (excl. unreadable): " .        $total_files_scanned    . "\n" .
+        "total files displayed:                  " .        $total_files_displayed  . "\n" .
+        "total patients displayed:               " .        $total_pids_displayed   . "\n" .
         "unreadable directories:                 " . scalar @inaccessible_dirs      . "\n" .
         "undetectable pids:                      " . scalar @pid_undetectable_paths . "\n" .
         "files skipped for missing index:        " . scalar @files_without_indices  . "\n";
@@ -475,7 +480,8 @@ sub printShortReport () {
 
 sub printLongReport () {
   print "total files scanned (excl. unreadable): $total_files_scanned\n" .
-        "total files displayed:                  $total_files_displayed\n\n";
+        "total files displayed:                  $total_files_displayed\n" .
+        "total patients displayed:               $total_pids_displayed\n";
 
   printWithHeader("unreadable directories", @inaccessible_dirs);
   printWithHeader("undetectable PIDs", @pid_undetectable_paths);
