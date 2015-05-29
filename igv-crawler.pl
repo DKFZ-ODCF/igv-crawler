@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+use 5.010;
 
 #
 # This script scans the specified project folder for
@@ -345,15 +346,21 @@ sub findDatafilesToDisplay (%) {
   foreach my $patient_id (keys %original) {
     ### meaningful temp names
     my @all_files = sort @{ $original{ $patient_id }};
+    my @unfiltered_bams = grep { $_ =~ /\.bam$/  } @all_files;
 
     my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     @all_files);
     my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', @all_files);
 
-    my @bams_to_show = sort (@bams_having_bais, @bams_having_bambais);
-    $total_files_displayed += (scalar @bams_to_show);  # log for report
+    my @bams_having_indices = sort (@bams_having_bais, @bams_having_bambais);
+
+    # log missing indices for report
+    my @bams_missing_indices = grep { not $_ ~~ @bams_having_indices } @unfiltered_bams;
+    push @files_without_indices, @bams_missing_indices;
+
+    $total_files_displayed += (scalar @bams_having_indices);  # log for report
 
     # store result
-    @{ $filtered{ $patient_id } } = @bams_to_show;
+    @{ $filtered{ $patient_id } } = @bams_having_indices;
   }
 
   $total_pids_displayed = scalar keys %filtered;       # log for report
@@ -396,9 +403,9 @@ sub findFilesWithIndices ($$@) {
   #   this immediately gives us a list of all datafiles which have a corresponding indexfiles
   my @data_having_index = delete @expected_indices{@found_indices};
   # TODO: figure out which found-indices don't occur in @expected_indices, to store as @orphaned_indices
-
   # %expected_indices now contains the hash { missing-index-file => found-data-file }
-  #push @files_without_indices, values %expected_indices;
+  #   unfortunately, we cannot use this to detect data-files-missing-their-index, because
+  #   file.bam could be missing file.bam.bai, but could provide file.bai
 
   # remove undefs resulting from leftover index-files whose data-file was removed/not-found
   # (removing non-existant keys returns an undef)
