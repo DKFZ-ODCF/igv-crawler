@@ -52,14 +52,14 @@ my $report_mode = "counts";   # what to report? "full" > print complete lists of
 # REPORTING VARIABLES
 # We keep some counters/lists to see what kinds of trouble we run in to.
 #
-my $total_files_scanned = 0;  # total number of files seen by the find-filter (excludes unreadable directories)
-my $total_files_displayed =0; # number of files that are displayed
-my $total_pids_displayed =0;  # number of distinct patients all the files belong to
-my @inaccessible_dirs;        # global list of all dirs that where inaccesible to the File::find run ; which users should we 'kindly' suggest to fix permissions?
-my @undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
-my @pid_undetectable_paths;   # paths that we couldn't derive a pid from
-my @files_without_indices;    # files we had to filter out due to missing indices
-my @orphaned_indices;         # leftover index-files we found, whose datafile was removed
+my $log_total_files_scanned = 0;  # total number of files seen by the find-filter (excludes unreadable directories)
+my $log_total_files_displayed =0; # number of files that are displayed
+my $log_total_pids_displayed =0;  # number of distinct patients all the files belong to
+my @log_inaccessible_dirs;        # global list of all dirs that where inaccesible to the File::find run ; which users should we 'kindly' suggest to fix permissions?
+my @log_undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
+my @log_pid_undetectable_paths;   # paths that we couldn't derive a pid from
+my @log_files_without_indices;    # files we had to filter out due to missing indices
+my @log_orphaned_indices;         # leftover index-files we found, whose datafile was removed
 #####################################################################################
 
 # THE var: global list to keep track of all the bam+bai files we have found
@@ -166,7 +166,7 @@ sub main {
 
 # Used by File::Find::finddepth in main()
 sub igvFileFilter () {
-  $total_files_scanned++;  # log for report
+  $log_total_files_scanned++;
   my $filename = $File::Find::name;
 
   # criteria for exclusion
@@ -182,7 +182,7 @@ sub excludeAndLogUnreadableDirs () {
   # thank you http://www.perlmonks.org/?node_id=1023278
   grep {
     if ( -d $_ and !-r $_ ) {
-      push @inaccessible_dirs, "$File::Find::dir/$_";  # log for report
+      push @log_inaccessible_dirs, "$File::Find::dir/$_";
       0;    # don't pass on inaccessible dir
     } else {
       1;
@@ -211,7 +211,7 @@ sub derivePatientIdFrom ($) {
     my $patient_id = $1;
     return $patient_id;
   } else {
-    push @pid_undetectable_paths, $filepath;  # log for report
+    push @log_pid_undetectable_paths, $filepath;
     return 'ERROR-NO-MATCH';
   }
 }
@@ -282,7 +282,7 @@ sub getDisplayFileNameFor ($) {
       return join(" > ", @captures);
 
     } else { # paths we can't display nicely, we just display it in all their horrid glory
-      push @undisplayable_paths, $filepath;  # log for report
+      push @log_undisplayable_paths, $filepath;
       return $filepath;
     }
   }
@@ -355,15 +355,15 @@ sub findDatafilesToDisplay (%) {
 
     # log missing indices for report
     my @bams_missing_indices = grep { not $_ ~~ @bams_having_indices } @unfiltered_bams;
-    push @files_without_indices, @bams_missing_indices;
+    push @log_files_without_indices, @bams_missing_indices;
 
-    $total_files_displayed += (scalar @bams_having_indices);  # log for report
+    $log_total_files_displayed += (scalar @bams_having_indices);
 
     # store result
     @{ $filtered{ $patient_id } } = @bams_having_indices;
   }
 
-  $total_pids_displayed = scalar keys %filtered;       # log for report
+  $log_total_pids_displayed = scalar keys %filtered;
   return %filtered;
 }
 
@@ -402,7 +402,7 @@ sub findFilesWithIndices ($$@) {
   #   (i.e. the datafile attached to each found-index-file, thanks to the 'inverted' key,value from before)
   #   this immediately gives us a list of all datafiles which have a corresponding indexfiles
   my @data_having_index = delete @expected_indices{@found_indices};
-  # TODO: figure out which found-indices don't occur in @expected_indices, to store as @orphaned_indices
+  # TODO: figure out which found-indices don't occur in @expected_indices, to store as @log_orphaned_indices
   # %expected_indices now contains the hash { missing-index-file => found-data-file }
   #   unfortunately, we cannot use this to detect data-files-missing-their-index, because
   #   file.bam could be missing file.bam.bai, but could provide file.bai
@@ -474,28 +474,28 @@ sub printReport () {
 
 
 sub printShortReport () {
-  print "total files scanned (excl. unreadable): " .        $total_files_scanned    . "\n" .
-        "total patients displayed:               " .        $total_pids_displayed   . "\n" .
-        "total files displayed:                  " .        $total_files_displayed  . "\n" .
-        "unreadable directories:                 " . scalar @inaccessible_dirs      . "\n" .
-        "undetectable pids:                      " . scalar @pid_undetectable_paths . "\n" .
-        "files skipped for missing index:        " . scalar @files_without_indices  . "\n";
+  print "total files scanned (excl. unreadable): " .        $log_total_files_scanned    . "\n" .
+        "total patients displayed:               " .        $log_total_pids_displayed   . "\n" .
+        "total files displayed:                  " .        $log_total_files_displayed  . "\n" .
+        "unreadable directories:                 " . scalar @log_inaccessible_dirs      . "\n" .
+        "undetectable pids:                      " . scalar @log_pid_undetectable_paths . "\n" .
+        "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n";
 
-  print "unparseable paths:                      " . scalar @undisplayable_paths    . "\n" if $display_mode eq 'regex';
+  print "unparseable paths:                      " . scalar @log_undisplayable_paths    . "\n" if $display_mode eq 'regex';
 
 }
 
 sub printLongReport () {
-  print "total files scanned (excl. unreadable): $total_files_scanned\n" .
-        "total patients displayed:               $total_pids_displayed\n" .
-        "total files displayed:                  $total_files_displayed\n";
+  print "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
+        "total patients displayed:               $log_total_pids_displayed\n" .
+        "total files displayed:                  $log_total_files_displayed\n";
 
-  printWithHeader("unreadable directories", @inaccessible_dirs);
-  printWithHeader("undetectable PIDs", @pid_undetectable_paths);
-  printWithHeader("files without index", @files_without_indices);
-#  printWithHeader("orphaned index files", @orphaned_indices); # skip until I figure out how to actually populate this
+  printWithHeader("unreadable directories", @log_inaccessible_dirs);
+  printWithHeader("undetectable PIDs",      @log_pid_undetectable_paths);
+  printWithHeader("files without index",    @log_files_without_indices);
+#  printWithHeader("orphaned index files",   @log_orphaned_indices); # skip until I figure out how to actually populate this
 
-  printWithHeader("Unparseable paths", @undisplayable_paths) if $display_mode eq 'regex';
+  printWithHeader("Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
 }
 
 sub printWithHeader ($@) {
