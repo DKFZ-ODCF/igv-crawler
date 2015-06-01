@@ -46,6 +46,7 @@ my $pid_regex;                # every file-path is run through this regex to ext
 my $display_mode = "nameonly"; # what to show in the HTML-file; defaults to historical behaviour: show filename without parent dir-path
 my $display_regex;             # parsed version of $display_mode, in case it is a regex
 my $report_mode = "counts";   # what to report? "full" > print complete lists of paths, "counts" > only print number of files/paths
+my $follow_symlinks = 0;       # whether to follow symlinks (use of this option breaks logging of unreadable directories, due to limitations on the 'preprocess' funtion in File::Find http://perldoc.perl.org/File/Find.html)
 #####################################################################################
 
 #####################################################################################
@@ -91,7 +92,8 @@ sub parseArgs () {
               'scandir=s'   => \@scan_dirs,    # where to look for IGV-relevant files
               'pidformat=s' => \$pid_regex,    # the regex used to extract the patient_id from a file path.
               'display=s'   => \$display_mode,  # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
-              'report=s'    => \$report_mode   # what to report at end-of-execution: "counts" or "full"
+              'report=s'    => \$report_mode,   # what to report at end-of-execution: "counts" or "full"
+              'followlinks' => \$follow_symlinks # flag, follow symlinks or not?
              )
   or die("Error parsing command line arguments");
 
@@ -146,11 +148,17 @@ sub main {
   print "Scanning $project_name for IGV-relevant files in:\n";
   print "  $_\n" for @scan_dirs;
 
+  # Follow symlinks or not?
+  my ($follow_fast, $follow_skip) = (undef, undef); # default: don't follow anything
+  if ($follow_symlinks == 1) {
+    ($follow_fast, $follow_skip) = (1, 2)  # (follow symlinks, silently ignore duplicate files)
+  }
+
   # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
   finddepth( {
-      preprocess => \&excludeAndLogUnreadableDirs,
+      preprocess => \&excludeAndLogUnreadableDirs,  # preprocess is set but not called when follow_fast != 0; (i.e. when argument --followlinks was passed)
       wanted => \&igvFileFilter,
-      follow => 1, follow_skip => 2           # follow symlinks, needed for Medulloblastoma (which is a rats nest of symlinks, some pointing at shared folders)
+      follow_fast => $follow_fast, follow_skip => $follow_skip
   }, @scan_dirs);
 
   clearOldLinksIn($link_dir_path);
@@ -489,12 +497,11 @@ sub printShortReport () {
   print "total files scanned (excl. unreadable): " .        $log_total_files_scanned    . "\n" .
         "total patients displayed:               " .        $log_total_pids_displayed   . "\n" .
         "total files displayed:                  " .        $log_total_files_displayed  . "\n" .
-        "unreadable directories:                 " . scalar @log_inaccessible_dirs      . "\n" .
         "undetectable pids:                      " . scalar @log_pid_undetectable_paths . "\n" .
         "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n";
 
   print "unparseable paths:                      " . scalar @log_undisplayable_paths    . "\n" if $display_mode eq 'regex';
-
+  print "unreadable directories:                 " . scalar @log_inaccessible_dirs      . "\n" if $follow_symlinks != 1; # following symlinks breaks unreadable-dir logging, see comments in main()
 }
 
 
@@ -503,12 +510,12 @@ sub printLongReport () {
         "total patients displayed:               $log_total_pids_displayed\n" .
         "total files displayed:                  $log_total_files_displayed\n";
 
-  printWithHeader("unreadable directories", @log_inaccessible_dirs);
   printWithHeader("undetectable PIDs",      @log_pid_undetectable_paths);
   printWithHeader("files without index",    @log_files_without_indices);
-#  printWithHeader("orphaned index files",   @log_orphaned_indices); # skip until I figure out how to actually populate this
 
   printWithHeader("Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
+  printWithHeader("unreadable directories", @log_inaccessible_dirs)   if $follow_symlinks != 1; # following symlinks breaks unreadable-dir logging, see comments in main()
+  #printWithHeader("orphaned index files",   @log_orphaned_indices)
 }
 
 
