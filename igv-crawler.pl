@@ -165,6 +165,8 @@ sub main {
 
 
 # Used by File::Find::finddepth in main()
+# It determines if a file is relevant to IGV (either a file to display, or an accompanying index-file).
+# If so, the file is added to the global list via sub addToIndex()
 sub igvFileFilter () {
   $log_total_files_scanned++;
   my $filename = $File::Find::name;
@@ -178,6 +180,10 @@ sub igvFileFilter () {
   addToIndex($filename);
 }
 
+
+# Used by File::Find::finddepth in main()
+# Checks if the directories finddepth is about to descend into are readable.
+# if not, it logs them, and excludes them from the todo list.
 sub excludeAndLogUnreadableDirs () {
   # thank you http://www.perlmonks.org/?node_id=1023278
   grep {
@@ -190,6 +196,9 @@ sub excludeAndLogUnreadableDirs () {
   } @_;
 }
 
+
+# Registers the provided filename in the global var %bambai_file_index
+# under the appropriate PID derived from the filepath.
 sub addToIndex ($) {
   my ($file) = @_;
 
@@ -204,6 +213,8 @@ sub addToIndex ($) {
 
 
 # Function to derive a patientID from a filename
+# requires global var $pid_regex, a regex whose first capture-group becomes the returned pid.
+# If no match is found, returns 'ERROR-NO-MATCH' to signal failure.
 sub derivePatientIdFrom ($) {
   my ($filepath) = @_;
 
@@ -336,8 +347,8 @@ sub makeHtmlPage ($$$%) {
 # - .bam's having .bam.bai's
 #
 # the index-files themselves (.bai's, .bam.bai's) are not included in the html-output
-# because by this point, the symlinks already exist, and IGV will derive
-# the index-file-link from the data-file-link
+# because by this point, the symlinks already exist (see sub makeAllFileSystemLinks), and IGV will derive
+# the index-file link from the data-file link
 sub findDatafilesToDisplay (%) {
   my (%original) = @_;
 
@@ -366,6 +377,7 @@ sub findDatafilesToDisplay (%) {
   $log_total_pids_displayed = scalar keys %filtered;
   return %filtered;
 }
+
 
 # returns a list of the datafiles that have a matching index-file
 #
@@ -405,7 +417,7 @@ sub findFilesWithIndices ($$@) {
   # TODO: figure out which found-indices don't occur in @expected_indices, to store as @log_orphaned_indices
   # %expected_indices now contains the hash { missing-index-file => found-data-file }
   #   unfortunately, we cannot use this to detect data-files-missing-their-index, because
-  #   file.bam could be missing file.bam.bai, but could provide file.bai
+  #   file.bam could be missing file.bam.bai, while having file.bai (which is considered in a different calling of this funtion)
 
   # remove undefs resulting from leftover index-files whose data-file was removed/not-found
   # (removing non-existant keys returns an undef)
@@ -485,6 +497,7 @@ sub printShortReport () {
 
 }
 
+
 sub printLongReport () {
   print "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
         "total patients displayed:               $log_total_pids_displayed\n" .
@@ -497,6 +510,7 @@ sub printLongReport () {
 
   printWithHeader("Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
 }
+
 
 sub printWithHeader ($@) {
   my ($header, @list) = @_;
