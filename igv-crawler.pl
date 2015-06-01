@@ -40,15 +40,13 @@ my $link_dir = "links";
 #####################################################################################
 # COMMAND LINE PARAMETERS
 #
-my $project_name = 'demo';    # defaults to demo-settings, to not-break prod when someone forgets to specify
-my @scan_dirs;                # list of directories that will be scanned
-my $pid_regex;                # every file-path is run through this regex to extract the PID (pid-pattern MUST be first capture group)
-my $display_mode = "nameonly"; # what to show in the HTML-file; defaults to historical behaviour: show filename without parent dir-path
-my $display_regex;             # parsed version of $display_mode, in case it is a regex
-my $report_mode = "counts";   # what to report? "full" > print complete lists of paths, "counts" > only print number of files/paths
-my $follow_symlinks = 0;       # whether to follow symlinks (use of this option breaks logging of unreadable directories, due to limitations on the 'preprocess' funtion in File::Find http://perldoc.perl.org/File/Find.html)
-#####################################################################################
-
+my $project_name = 'demo';        # defaults to demo-settings, to not-break prod when someone forgets to specify
+my @scan_dirs;                    # list of directories that will be scanned
+my $pid_regex;                    # every file-path is run through this regex to extract the PID (pid-pattern MUST be first capture group)
+my $display_mode = "nameonly";    # what to show in the HTML-file; defaults to historical behaviour: show filename without parent dir-path
+my $display_regex;                # parsed version of $display_mode, in case it is a regex
+my $report_mode = "counts";       # what to report? "full" > print complete lists of paths, "counts" > only print number of files/paths
+my $follow_symlinks = 0;          # whether to follow symlinks (use of this option breaks logging of unreadable directories, due to limitations on the 'preprocess' funtion in File::Find http://perldoc.perl.org/File/Find.html)
 #####################################################################################
 # REPORTING VARIABLES
 # We keep some counters/lists to see what kinds of trouble we run in to.
@@ -88,11 +86,11 @@ main();
 # Parses and sanity-checks the command-line parameters.
 # does "die()" when anything smells weird
 sub parseArgs () {
-  GetOptions ('project=s'   => \$project_name, # will be used as "the $project_name project", as well as (lowercased) subdir name
-              'scandir=s'   => \@scan_dirs,    # where to look for IGV-relevant files
-              'pidformat=s' => \$pid_regex,    # the regex used to extract the patient_id from a file path.
-              'display=s'   => \$display_mode,  # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
-              'report=s'    => \$report_mode,   # what to report at end-of-execution: "counts" or "full"
+  GetOptions ('project=s'   => \$project_name,   # will be used as "the $project_name project", as well as (lowercased) subdir name
+              'scandir=s'   => \@scan_dirs,      # where to look for IGV-relevant files
+              'pidformat=s' => \$pid_regex,      # the regex used to extract the patient_id from a file path.
+              'display=s'   => \$display_mode,   # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
+              'report=s'    => \$report_mode,    # what to report at end-of-execution: "counts" or "full"
               'followlinks' => \$follow_symlinks # flag, follow symlinks or not?
              )
   or die("Error parsing command line arguments");
@@ -111,7 +109,7 @@ sub parseArgs () {
       die "display-mode regex must contain at least one capture group to display";
     }
     eval {
-      $display_regex = qr/$display_regex/;
+      $display_regex = qr/$display_regex/; # precompile regex
     } or do {
       die "error encountered while parsing display-mode regex:\n$@";
     };
@@ -515,7 +513,7 @@ sub printLongReport () {
 
   printWithHeader("Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
   printWithHeader("unreadable directories", @log_inaccessible_dirs)   if $follow_symlinks != 1; # following symlinks breaks unreadable-dir logging, see comments in main()
-  #printWithHeader("orphaned index files",   @log_orphaned_indices)
+ #printWithHeader("orphaned index files",   @log_orphaned_indices)
 }
 
 
