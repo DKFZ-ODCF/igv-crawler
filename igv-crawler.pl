@@ -499,7 +499,15 @@ sub printShortReport () {
         "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n";
 
   print "unparseable paths:                      " . scalar @log_undisplayable_paths    . "\n" if $display_mode eq 'regex';
-  print "unreadable directories:                 " . scalar @log_inaccessible_dirs      . "\n" if $follow_symlinks != 1; # following symlinks breaks unreadable-dir logging, see comments in main()
+
+  # following symlinks breaks unreadable-dir logging, see comments in main()
+  print "unreadable directories:                 ";
+  if ($follow_symlinks == 1) {
+    print "N/A"
+  } else {
+    print scalar @log_inaccessible_dirs
+  }
+  print "\n"
 }
 
 
@@ -512,8 +520,15 @@ sub printLongReport () {
   printWithHeader("files without index",    @log_files_without_indices);
 
   printWithHeader("Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
-  printWithHeader("unreadable directories", @log_inaccessible_dirs)   if $follow_symlinks != 1; # following symlinks breaks unreadable-dir logging, see comments in main()
- #printWithHeader("orphaned index files",   @log_orphaned_indices)
+
+  # following symlinks breaks unreadable-dir logging, see comments in main()
+  if ($follow_symlinks == 1) {
+    print "unreadable directories: N/A\n"
+  } else {
+    printWithHeader("unreadable directories", @log_inaccessible_dirs)
+  }
+
+  #printWithHeader("orphaned index files",   @log_orphaned_indices)
 }
 
 
