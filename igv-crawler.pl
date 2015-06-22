@@ -245,7 +245,7 @@ sub clearOldLinksIn ($) {
 
   # sanity, don't let this work on directories that aren't ours
   # intentionally hardcoding 'links' instead of $link_dir, so it'll break if future people are careless (recursive "find -delete" is NASTY)
-  die "SAFETY: paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ |^/public-otp-files/.*/links|;
+  die "SAFETY: paramaters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/;
 
   # delete all symlinks in our directory
   system( "find -P '$dir_to_clear' -mount -depth -type l  -delete" );
