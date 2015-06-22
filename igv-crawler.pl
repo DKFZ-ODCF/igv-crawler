@@ -255,6 +255,17 @@ sub clearOldLinksIn ($) {
 }
 
 
+# Populates the publicly-visible public_link_dir with links into the 'private' filesystem.
+# One subfolder per PID containing all links for that patient:
+#
+# public_dir/
+#   pid_a/
+#     some-link-1
+#     some-link-2
+#   pid_b/
+#     some-link-3
+#     some-link-4
+#
 sub makeAllFileSystemLinks ($%) {
   my ($public_link_dir, %files_per_patient_id) = @_;
 
@@ -266,7 +277,7 @@ sub makeAllFileSystemLinks ($%) {
       my $filename = getLinkNameFor($file_to_link);
 
       my $public_path = catfile($public_pid_dir, $filename);
-      if (-l $public_path) { # the link we want to create was already made for another file in this pid; works because this parent dir is 'rm -rf'd before we run this.
+      if (-l $public_path) { # the link we want to create was already made for another file in this pid; this isn't from a previous run because this parent dir is cleared by clearOldLinksIn() before this
         my $old_target = readlink $public_path;
 
         push @log_symlink_clashes, "$old_target -> $file_to_link";
@@ -288,7 +299,7 @@ sub makeDirectoryFor ($$) {
 }
 
 
-sub getDisplayFileNameFor ($) {
+sub getDisplayNameFor ($) {
   my ($filepath) = @_;
 
   if ($display_mode eq "fullpath") {
@@ -313,6 +324,11 @@ sub getDisplayFileNameFor ($) {
 }
 
 
+# Determines a publicly visible name for an absolute filepath.
+# It chops off the leading scandir and flattens directory separators to dashes:
+# /my/absolute/results-per-pid-scandir/some_pid/some_analysis/file.txt becomes
+#                                      some_pid-some_analysis-file.txt
+
 sub getLinkNameFor ($) {
   my ($filepath) = @_;
 
@@ -335,6 +351,7 @@ sub getLinkNameFor ($) {
 }
 
 
+# Formats and pours the provided data into a nice little template. Writes the result to disk.
 sub makeHtmlPage ($$$%) {
   my ($output_file, $file_host_dir, $project_name, %files_per_patient_id) = @_;
 
@@ -373,35 +390,40 @@ sub makeHtmlPage ($$$%) {
 # - .bam's having .bai's
 # - .bam's having .bam.bai's
 #
-# the index-files themselves (.bai's, .bam.bai's) are not included in the html-output
-# because by this point, the symlinks already exist (see sub makeAllFileSystemLinks), and IGV will derive
-# the index-file link from the data-file link
+# the index-files themselves (.bai's, .bam.bai's) are not explicitly listed in the html-output.
+# Their links already exist by this point though, (see sub makeAllFileSystemLinks), 
+# so IGV can derive the index-file link from the data-file link (IGV's preferred method).
 sub findDatafilesToDisplay (%) {
   my (%original) = @_;
 
   my %filtered = ();
 
   foreach my $patient_id (keys %original) {
-    ### meaningful temp names
+    # meaningful temp names
     my @all_files = sort @{ $original{ $patient_id }};
     my @unfiltered_bams = grep { $_ =~ /\.bam$/  } @all_files;
 
+    # actual filtering steps
     my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     @all_files);
     my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', @all_files);
 
+    # merge results
     my @bams_having_indices = sort (@bams_having_bais, @bams_having_bambais);
 
     # log missing indices for report
     my @bams_missing_indices = grep { not $_ ~~ @bams_having_indices } @unfiltered_bams;
     push @log_files_without_indices, @bams_missing_indices;
 
+    # update totals-counter
     $log_total_files_displayed += (scalar @bams_having_indices);
 
     # store result
     @{ $filtered{ $patient_id } } = @bams_having_indices;
   }
 
+  # update other totals-counter
   $log_total_pids_displayed = scalar keys %filtered;
+
   return %filtered;
 }
 
@@ -413,13 +435,13 @@ sub findDatafilesToDisplay (%) {
 # effectively removing both indexless-datafiles AND the indexfiles from the input
 sub findFilesWithIndices ($$@) {
   # meaningful temp names
-  #       .bam         .bam.bai || .bai  [....]   
+  #       .bam         .bam.bai || .bai    [....]
   my ($data_extension, $index_extension, @all_files) = @_;
 
   my $data_pattern  = quotemeta($data_extension)  . '$';
   my $index_pattern = quotemeta($index_extension) . '$';
 
-  # first, gather up our datafiles and indexfiles
+  # first, divide our datafiles and indexfiles into separate buckets
   my @found_data    = grep { $_ =~ /$data_pattern/  } @all_files;
   my @found_indices = grep { $_ =~ /$index_pattern/ } @all_files;
 
@@ -441,13 +463,13 @@ sub findFilesWithIndices ($$@) {
   #   (i.e. the datafile attached to each found-index-file, thanks to the 'inverted' key,value from before)
   #   this immediately gives us a list of all datafiles which have a corresponding indexfiles
   my @data_having_index = delete @expected_indices{@found_indices};
-  # TODO: figure out which found-indices don't occur in @expected_indices, to store as @log_orphaned_indices
   # %expected_indices now contains the hash { missing-index-file => found-data-file }
   #   unfortunately, we cannot use this to detect data-files-missing-their-index, because
   #   file.bam could be missing file.bam.bai, while having file.bai (which is considered in a different calling of this funtion)
 
   # remove undefs resulting from leftover index-files whose data-file was removed/not-found
   # (removing non-existant keys returns an undef)
+  # TODO: figure out how to log the matching found_index to @log_orphaned_indices
   @data_having_index = grep { defined } @data_having_index;
 
   return @data_having_index;
@@ -477,13 +499,13 @@ sub formatPatientDataForTemplate (%) {
     # outer 'list' of patient + linked-files
     my $pid = $_;
     {
-      patient_id => $pid,
+      patient_id    => $pid,
       linked_files  => [ map {
         # inner 'list' of filenames
         my $filename = $_;
         {
           diskfilename    => getLinkNameFor($filename),
-          displayfilename => getDisplayFileNameFor($filename)
+          displayfilename => getDisplayNameFor($filename)
         }
       } @{$files_per_pid{$pid}} ]
     }
