@@ -263,7 +263,7 @@ sub makeAllFileSystemLinks ($%) {
   foreach my $patient_id (keys %files_per_patient_id) {
     my $public_pid_dir = makeDirectoryFor($public_link_dir, $patient_id);
     foreach my $file_to_link (@{ $files_per_patient_id{$patient_id} }) {
-      my $filename = getDiskFileNameFor($file_to_link);
+      my $filename = getLinkNameFor($file_to_link);
 
       my $public_path = catfile($public_pid_dir, $filename);
       if (-l $public_path) { # the link we want to create was already made for another file in this pid; works because this parent dir is 'rm -rf'd before we run this.
@@ -313,11 +313,25 @@ sub getDisplayFileNameFor ($) {
 }
 
 
-sub getDiskFileNameFor ($) {
+sub getLinkNameFor ($) {
   my ($filepath) = @_;
 
+  # subtract the base scandir from the path
+  # since only File::find knows in which of the many scandirs it found this file, try all of them until we find it.
+  foreach my $scan_dir (@scan_dirs) {
+    if (index($filepath, $scan_dir) != -1) {
+      $filepath = substr($filepath, length($scan_dir));
+      last;
+    }
+  }
+
+  # avoid turning the links-per-pid subdir into a maze of subdirs
+  # just keep a flat list of links under there.
+  # i.e. some/dir/with/a-file.txt -> some-dir-with-a-file.txt
   my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
-  return $filename;
+  my @path_elems = File::Spec->splitdir($dir);
+  push @path_elems, $filename;
+  return join("-", @path_elems);
 }
 
 
@@ -468,7 +482,7 @@ sub formatPatientDataForTemplate (%) {
         # inner 'list' of filenames
         my $filename = $_;
         {
-          diskfilename    => getDiskFileNameFor($filename),
+          diskfilename    => getLinkNameFor($filename),
           displayfilename => getDisplayFileNameFor($filename)
         }
       } @{$files_per_pid{$pid}} ]
