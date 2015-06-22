@@ -255,17 +255,17 @@ sub clearOldLinksIn ($) {
 
 
 sub makeAllFileSystemLinks ($%) {
-  my ($link_target_dir, %files_per_patient_id) = @_;
+  my ($public_link_dir, %files_per_patient_id) = @_;
 
-  print "creating links in $link_target_dir\n";
+  print "creating links in $public_link_dir\n";
 
   foreach my $patient_id (keys %files_per_patient_id) {
-    my $public_dir = makeDirectoryFor($link_target_dir, $patient_id);
-    foreach my $original_file (@{ $files_per_patient_id{$patient_id} }) {
-      my $filename = getDiskFileNameFor($original_file);
+    my $public_pid_dir = makeDirectoryFor($public_link_dir, $patient_id);
+    foreach my $file_to_link (@{ $files_per_patient_id{$patient_id} }) {
+      my $filename = getDiskFileNameFor($file_to_link);
 
-      my $public_path = catfile($public_dir, $filename);
-      symlink $original_file, $public_path;
+      my $public_path = catfile($public_pid_dir, $filename);
+      symlink $file_to_link, $public_path;
     }
   }
 }
