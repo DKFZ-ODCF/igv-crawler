@@ -56,6 +56,7 @@ my $log_total_files_displayed =0; # number of files that are displayed
 my $log_total_pids_displayed =0;  # number of distinct patients all the files belong to
 my @log_inaccessible_dirs;        # global list of all dirs that where inaccesible to the File::find run ; which users should we 'kindly' suggest to fix permissions?
 my @log_undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
+my @log_symlink_clashes;          # Currently filenames must be unique per pid, because the symlink uses only the basename; log if this causes problems (fix to come?)
 my @log_pid_undetectable_paths;   # paths that we couldn't derive a pid from
 my @log_files_without_indices;    # files we had to filter out due to missing indices
 my @log_orphaned_indices;         # leftover index-files we found, whose datafile was removed
@@ -265,6 +266,12 @@ sub makeAllFileSystemLinks ($%) {
       my $filename = getDiskFileNameFor($file_to_link);
 
       my $public_path = catfile($public_pid_dir, $filename);
+      if (-l $public_path) { # the link we want to create was already made for another file in this pid; works because this parent dir is 'rm -rf'd before we run this.
+        my $old_target = readlink $public_path;
+
+        push @log_symlink_clashes, "$old_target -> $file_to_link";
+      }
+
       symlink $file_to_link, $public_path;
     }
   }
@@ -496,7 +503,8 @@ sub printShortReport () {
         "total patients displayed:               " .        $log_total_pids_displayed   . "\n" .
         "total files displayed:                  " .        $log_total_files_displayed  . "\n" .
         "undetectable pids:                      " . scalar @log_pid_undetectable_paths . "\n" .
-        "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n";
+        "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n" .
+        "symlink clashes:                        " . scalar @log_symlink_clashes        . "\n";
 
   print "unparseable paths:                      " . scalar @log_undisplayable_paths    . "\n" if $display_mode eq 'regex';
 
@@ -518,6 +526,7 @@ sub printLongReport () {
 
   printWithHeader("undetectable PIDs",      @log_pid_undetectable_paths);
   printWithHeader("files without index",    @log_files_without_indices);
+  printWithHeader("symlink name clashes",   @log_symlink_clashes);
 
   printWithHeader("Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
 
