@@ -54,7 +54,7 @@ my $follow_symlinks = 0;          # whether to follow symlinks (use of this opti
 my $log_total_files_scanned = 0;  # total number of files seen by the find-filter (excludes unreadable directories)
 my $log_total_files_displayed =0; # number of files that are displayed
 my $log_total_pids_displayed =0;  # number of distinct patients all the files belong to
-my @log_inaccessible_dirs;        # global list of all dirs that where inaccesible to the File::find run ; which users should we 'kindly' suggest to fix permissions?
+my @log_inaccessible_files;       # global list of all dirs that where inaccesible to the File::find run ; which users should we 'kindly' suggest to fix permissions?
 my @log_undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
 my @log_symlink_clashes;          # Currently filenames must be unique per pid, because the symlink uses only the basename; log if this causes problems (fix to come?)
 my @log_pid_undetectable_paths;   # paths that we couldn't derive a pid from
@@ -153,20 +153,23 @@ sub main {
     ($follow_fast, $follow_skip) = (1, 2)  # (follow symlinks, silently ignore duplicate files)
   }
 
-  # finddepth->findFilter stores into global %bambai_file_index, via sub addToIndex()
   finddepth( {
-      preprocess => \&excludeAndLogUnreadableDirs,  # preprocess is set but not called when follow_fast != 0; (i.e. when argument --followlinks was passed)
-      wanted => \&igvFileFilter,
+      # gotcha: preprocess is set but not called when follow_fast != 0; (i.e. when argument --followlinks was passed), see File::Find docu
+      preprocess => \&excludeAndLogUnreadableDirs,
+      wanted => \&igvFileFilter, # uses globals! stores into global %bambai_file_index, via sub addToIndex()
       follow_fast => $follow_fast, follow_skip => $follow_skip
   }, @scan_dirs);
 
+  # remove (potentially outdated/stale) links from previous run.
   clearOldLinksIn($link_dir_path);
 
-  # make desired LSDF files accessible from www-directory
+  # make desired LSDF files accessible in www-directory
   makeAllFileSystemLinks($link_dir_path, %bambai_file_index);
 
+  # static html page linking to lsdf-files in IGV-external-control format
   makeHtmlPage($output_file_path, $link_dir_url, $project_name, %bambai_file_index);
 
+  #feedback for poor admin
   printReport();
 }
 
@@ -191,16 +194,29 @@ sub igvFileFilter () {
 # Used by File::Find::finddepth in main()
 # Checks if the directories finddepth is about to descend into are readable.
 # if not, it logs them, and excludes them from the todo list.
-sub excludeAndLogUnreadableDirs () {
-  # thank you http://www.perlmonks.org/?node_id=1023278
-  grep {
-    if ( -d $_ and !-r $_ ) {
-      push @log_inaccessible_dirs, "$File::Find::dir/$_";
-      0;    # don't pass on inaccessible dir
+sub excludeAndLogUnreadableDirs (@) {
+  my @preprocess_files = @_;
+
+  # grep based on http://www.perlmonks.org/?node_id=1023278
+  my @only_readable = grep {
+    my $file = $_;
+
+    # without filetest, lazy-ass perl won't check ACL's, just the rwx-bits. (i.e. won't work on the Isilons..)
+    # WARNING: this messes with the implicit stat cache / '_' var, which may or may not be set after a -X test now.
+    #          to be safe, always call -X with named args when using filetest
+    #          see http://perldoc.perl.org/filetest.html for details
+    # COMMON SENSE: readable code shouldn't depend on _ anyway!
+    use filetest 'access';
+
+    if ( !-r $file ) {
+      push @log_inaccessible_files, "$File::Find::dir/$_";
+      0;
     } else {
       1;
     }
-  } @_;
+  } @preprocess_files;
+
+  return @only_readable;
 }
 
 
@@ -549,7 +565,7 @@ sub printShortReport () {
   if ($follow_symlinks == 1) {
     print "N/A"
   } else {
-    print scalar @log_inaccessible_dirs
+    print scalar @log_inaccessible_files
   }
   print "\n"
 }
@@ -570,7 +586,7 @@ sub printLongReport () {
   if ($follow_symlinks == 1) {
     print "unreadable directories: N/A\n"
   } else {
-    printWithHeader("unreadable directories", @log_inaccessible_dirs)
+    printWithHeader("unreadable directories", @log_inaccessible_files)
   }
 
   #printWithHeader("orphaned index files",   @log_orphaned_indices)
