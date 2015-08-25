@@ -423,8 +423,9 @@ sub findDatafilesToDisplay (%) {
     my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     @all_files);
     my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', @all_files);
 
-    # merge results
-    my @bams_having_indices = sort (@bams_having_bais, @bams_having_bambais);
+    # merge results, removing duplicates (some .bams provide both .bai + .bam.bai, and so occur in both bams_having_X lists)
+    my %unique_merged_bams_having_indices = map { $_, 1 } (@bams_having_bais, @bams_having_bambais);
+    my @bams_having_indices = sort keys %unique_merged_bams_having_indices;
 
     # log missing indices for report
     my @bams_missing_indices = grep { not $_ ~~ @bams_having_indices } @unfiltered_bams;
@@ -450,9 +451,8 @@ sub findDatafilesToDisplay (%) {
 # returns the list of datafiles that have an indexfile in the input
 # effectively removing both indexless-datafiles AND the indexfiles from the input
 sub findFilesWithIndices ($$@) {
-  # meaningful temp names
-  #       .bam         .bam.bai || .bai    [....]
   my ($data_extension, $index_extension, @all_files) = @_;
+  #       .bam       , .bam.bai || .bai,   [....]
 
   my $data_pattern  = quotemeta($data_extension)  . '$';
   my $index_pattern = quotemeta($index_extension) . '$';
@@ -477,7 +477,7 @@ sub findFilesWithIndices ($$@) {
   # delete the found index-files from expected-index-files map;
   #   since "delete ASSOC_ARRAY" returns the associated values of all deleted keys
   #   (i.e. the datafile attached to each found-index-file, thanks to the 'inverted' key,value from before)
-  #   this immediately gives us a list of all datafiles which have a corresponding indexfiles
+  #   this immediately gives us a list of all datafiles which have a corresponding indexfile
   my @data_having_index = delete @expected_indices{@found_indices};
   # %expected_indices now contains the hash { missing-index-file => found-data-file }
   #   unfortunately, we cannot use this to detect data-files-missing-their-index, because
