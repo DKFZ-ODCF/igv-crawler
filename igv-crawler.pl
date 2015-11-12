@@ -181,13 +181,22 @@ sub igvFileFilter () {
   $log_total_files_scanned++;
   my $filename = $File::Find::name;
 
-  # criteria for exclusion
-  return undef if -d $filename;                  # skip directories
-  return undef if -z $filename;                  # skip empty/zero-size files
-  return undef if $filename !~ /.*\.ba[im]$/;    # skip files that're not a bamfile or a bam-index
+  # fail-fast on simple cases.
+  return undef if -d $filename;   # skip directories, they're crawled, but never indexed
+  return undef if -z $filename;   # skip empty/zero-size files
 
-  # if we haven't bailed by now, apparently we want this file :-)
-  addToIndex($filename);
+  # file-types we're actually interested in.
+  if (
+      $filename =~ /.*\.ba[im]$/   or  # bamfiles + bam-indices
+      $filename =~ /.*\.tdf$/      or  # IGV proprietary TDF format
+      $filename =~ /.*\.bigwig$/   or  # .bigwig
+      $filename =~ /.*\.bedgraph$/   # .bedgraph
+  ) {
+    addToIndex($filename);
+  }
+
+  # and we're done, but File::Find doesn't expect a return value.
+  return undef;
 }
 
 
@@ -405,8 +414,9 @@ sub makeHtmlPage ($$$%) {
 # namely:
 # - .bam's having .bai's
 # - .bam's having .bam.bai's
+# - .tdf files created by igvtools
 #
-# the index-files themselves (.bai's, .bam.bai's) are not explicitly listed in the html-output.
+# any index-files (.bai's, .bam.bai's) are not explicitly listed in the html-output.
 # Their links already exist by this point though, (see sub makeAllFileSystemLinks), 
 # so IGV can derive the index-file link from the data-file link (IGV's preferred method).
 sub findDatafilesToDisplay (%) {
@@ -416,12 +426,35 @@ sub findDatafilesToDisplay (%) {
 
   foreach my $patient_id (keys %original) {
     # meaningful temp names
-    my @all_files = sort @{ $original{ $patient_id }};
-    my @unfiltered_bams = grep { $_ =~ /\.bam$/  } @all_files;
+    my @all_files_of_patient = sort @{ $original{ $patient_id }};
+
+    my @bams_having_indices = findBamfilesToDisplay(@all_files_of_patient);
+    my @tdf_files           = findFilesWithExtension('tdf', @all_files_of_patient);
+
+    my @combined_result = (@bams_having_indices, @tdf_files);
+
+    # update totals-counter
+    $log_total_files_displayed += (scalar @combined_result);
+
+    # store result
+    @{ $filtered{ $patient_id } } = @combined_result;
+  }
+
+  # update other totals-counter
+  $log_total_pids_displayed = scalar keys %filtered;
+
+  return %filtered;
+}
+
+
+# filters a patient's files for bams having .bai or .bam.bai files
+sub findBamfilesToDisplay (@) {
+    my @all_files_of_patient = @_;
+    my @unfiltered_bams = grep { $_ =~ /\.bam$/  } @all_files_of_patient;
 
     # actual filtering steps
-    my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     @all_files);
-    my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', @all_files);
+    my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     @all_files_of_patient);
+    my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', @all_files_of_patient);
 
     # merge results, removing duplicates (some .bams provide both .bai + .bam.bai, and so occur in both bams_having_X lists)
     my %unique_merged_bams_having_indices = map { $_, 1 } (@bams_having_bais, @bams_having_bambais);
@@ -431,17 +464,17 @@ sub findDatafilesToDisplay (%) {
     my @bams_missing_indices = grep { not $_ ~~ @bams_having_indices } @unfiltered_bams;
     push @log_files_without_indices, @bams_missing_indices;
 
-    # update totals-counter
-    $log_total_files_displayed += (scalar @bams_having_indices);
+    return @bams_having_indices;
+}
 
-    # store result
-    @{ $filtered{ $patient_id } } = @bams_having_indices;
-  }
 
-  # update other totals-counter
-  $log_total_pids_displayed = scalar keys %filtered;
+# finds files ending in .<parameter>$ among a patient's files
+sub findFilesWithExtension ($@) {
+  my ($extension, @all_files_of_patient) = @_;
 
-  return %filtered;
+  my $extension_pattern = '.' . quotemeta($extension) . '$';
+  
+  return grep { $_ =~ /$extension_pattern/ } @all_files_of_patient;
 }
 
 
