@@ -186,11 +186,35 @@ sub igvFileFilter () {
   return undef if -z $filename;   # skip empty/zero-size files
 
   # file-types we're actually interested in.
+  # based on IGV's supported file formats: https://www.broadinstitute.org/software/igv/FileFormats
   if (
-      $filename =~ /.*\.ba[im]$/   or  # bamfiles + bam-indices
-      $filename =~ /.*\.tdf$/      or  # IGV proprietary TDF format
-      $filename =~ /.*\.bigwig$/   or  # .bigwig
-      $filename =~ /.*\.bedgraph$/   # .bedgraph
+    $filename =~ /.*\.ba[im]$/                or
+    $filename =~ /.*\.bed/                    or
+    $filename =~ /.*\.bedGraph/               or
+    $filename =~ /.*\.bigbed/                 or
+    $filename =~ /.*\.bigWig/                 or
+    $filename =~ /.*\.birdseye_canary_calls/  or
+    $filename =~ /.*\.broadPeak/              or
+    $filename =~ /.*\.cbs/                    or
+    $filename =~ /.*\.cn/                     or
+    $filename =~ /.*\.gct/                    or
+    $filename =~ /.*\.gff/                    or
+    $filename =~ /.*\.gff3/                   or
+    $filename =~ /.*\.gtf/                    or
+    $filename =~ /.*\.gistic/                 or
+    $filename =~ /.*\.loh/                    or
+    $filename =~ /.*\.maf/                    or
+    $filename =~ /.*\.mut/                    or
+    $filename =~ /.*\.narrowPeak/             or
+    $filename =~ /.*\.psl/                    or
+    $filename =~ /.*\.res/                    or
+    $filename =~ /.*\.seg/                    or
+    $filename =~ /.*\.snp/                    or
+    $filename =~ /.*\.tdf/                    or
+    $filename =~ /.*\.vcf/                    or
+    $filename =~ /.*\.vcf\.gz/                or
+    $filename =~ /.*\.tbi/                    or
+    $filename =~ /.*\.wig/
   ) {
     addToIndex($filename);
   }
@@ -429,9 +453,36 @@ sub findDatafilesToDisplay (%) {
     my @all_files_of_patient = sort @{ $original{ $patient_id }};
 
     my @bams_having_indices = findBamfilesToDisplay(@all_files_of_patient);
-    my @tdf_files           = findFilesWithExtension('tdf', @all_files_of_patient);
+    my @bed           = findFilesWithExtension('bed',       @all_files_of_patient);
+    my @bedgraph      = findFilesWithExtension('bedGraph',  @all_files_of_patient); 
+    my @bigbed        = findFilesWithExtension('bigbed',    @all_files_of_patient);
+    my @bigwig        = findFilesWithExtension('bigWig',    @all_files_of_patient);
+    my @birdsuite     = findFilesWithExtension('birdseye_canary_calls', @all_files_of_patient); 
+    my @broadpeak     = findFilesWithExtension('broadPeak', @all_files_of_patient); 
+    my @cbs           = findFilesWithExtension('cbs',       @all_files_of_patient);
+    my @cn            = findFilesWithExtension('cn',        @all_files_of_patient);
+    my @gct           = findFilesWithExtension('gct',       @all_files_of_patient);
+    my @gff           = findFilesWithExtension('gff',       @all_files_of_patient);
+    my @gff3          = findFilesWithExtension('gff3',      @all_files_of_patient);
+    my @gtf           = findFilesWithExtension('gtf',       @all_files_of_patient);
+    my @gistic        = findFilesWithExtension('gistic',    @all_files_of_patient);
+    my @loh           = findFilesWithExtension('loh',       @all_files_of_patient);
+    my @maf           = findFilesWithExtension('maf',       @all_files_of_patient);
+    my @mut           = findFilesWithExtension('mut',       @all_files_of_patient);
+    my @narrowpeak    = findFilesWithExtension('narrowPeak',@all_files_of_patient); 
+    my @psl           = findFilesWithExtension('psl',       @all_files_of_patient);
+    my @res           = findFilesWithExtension('res',       @all_files_of_patient);
+    my @seg           = findFilesWithExtension('seg',       @all_files_of_patient);
+    my @snp           = findFilesWithExtension('snp',       @all_files_of_patient);
+    my @tdf           = findFilesWithExtension('tdf',       @all_files_of_patient);
+    my @vcf           = findFilesWithExtension('vcf',       @all_files_of_patient);
+    my @vcfgz         = findFilesWithIndices('.vcf.gz', '.tbi',  @all_files_of_patient);
+    my @wig           = findFilesWithExtension('Wig',    @all_files_of_patient);
 
-    my @combined_result = (@bams_having_indices, @tdf_files);
+
+    my @combined_result = sort (@bams_having_indices, @bed, @bedgraph, @bigbed, @bigwig, @birdsuite, @broadpeak,
+                           @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @loh, @maf, @mut, @narrowpeak, @psl, @res,
+                           @seg, @snp, @tdf, @vcf, @vcfgz, @wig);
 
     # update totals-counter
     $log_total_files_displayed += (scalar @combined_result);
@@ -469,12 +520,13 @@ sub findBamfilesToDisplay (@) {
 
 
 # finds files ending in .<parameter>$ among a patient's files
+# extension is match as case-insensitive regex.
 sub findFilesWithExtension ($@) {
   my ($extension, @all_files_of_patient) = @_;
 
   my $extension_pattern = '.' . quotemeta($extension) . '$';
   
-  return grep { $_ =~ /$extension_pattern/ } @all_files_of_patient;
+  return grep { $_ =~ /$extension_pattern/i } @all_files_of_patient;
 }
 
 
