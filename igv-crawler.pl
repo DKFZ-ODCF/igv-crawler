@@ -637,7 +637,7 @@ sub printShortReport () {
   print "unparseable paths:                      " . scalar @log_undisplayable_paths    . "\n" if $display_mode eq 'regex';
 
   # following symlinks breaks unreadable-dir logging, see comments in main()
-  print "unreadable directories:                 ";
+  print "unreadable files:                       ";
   if ($follow_symlinks == 1) {
     print "N/A"
   } else {
@@ -660,9 +660,9 @@ sub printLongReport () {
 
   # following symlinks breaks unreadable-dir logging, see comments in main()
   if ($follow_symlinks == 1) {
-    print "unreadable directories: N/A\n"
+    print "unreadable files: N/A\n"
   } else {
-    printWithHeader("unreadable directories", @log_inaccessible_files)
+    printWithHeader("unreadable files", @log_inaccessible_files)
   }
 
   #printWithHeader("orphaned index files",   @log_orphaned_indices)
