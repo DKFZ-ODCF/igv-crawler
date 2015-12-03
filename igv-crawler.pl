@@ -480,7 +480,7 @@ sub findDatafilesToDisplay (%) {
     my @wig           = findFilesWithExtension('Wig',    @all_files_of_patient);
 
 
-    my @combined_result = sort (@bams_having_indices, @bed, @bedgraph, @bigbed, @bigwig, @birdsuite, @broadpeak,
+    my @combined_result = sort(@bams_having_indices, @bed, @bedgraph, @bigbed, @bigwig, @birdsuite, @broadpeak,
                            @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @loh, @maf, @mut, @narrowpeak, @psl, @res,
                            @seg, @snp, @tdf, @vcf, @vcfgz, @wig);
 
