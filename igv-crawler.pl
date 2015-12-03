@@ -381,15 +381,6 @@ sub getDisplayNameFor ($) {
 sub getLinkNameFor ($) {
   my ($filepath) = @_;
 
-  # subtract the base scandir from the path
-  # since only File::find knows in which of the many scandirs it found this file, try all of them until we find it.
-  foreach my $scan_dir (@scan_dirs) {
-    if (index($filepath, $scan_dir) != -1) {
-      $filepath = substr($filepath, length($scan_dir));
-      last;
-    }
-  }
-
   # avoid turning the links-per-pid subdir into a maze of subdirs
   # just keep a flat list of links under there.
   # i.e. some/dir/with/a-file.txt -> some-dir-with-a-file.txt
