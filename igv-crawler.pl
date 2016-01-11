@@ -716,8 +716,8 @@ __DATA__
   last updated: <!-- TMPL_VAR NAME=timestamp --><br/>
   generated from files found in:
   <ul><!-- TMPL_LOOP NAME=scandirs -->
-    <li><!-- TMPL_VAR NAME=dir --></li>
-  <!-- /TMPL_LOOP --></ul>
+    <li><!-- TMPL_VAR NAME=dir --></li><!-- /TMPL_LOOP -->
+  </ul>
 </small></p>
 
 <!-- Right-hanging menu: has quick-links to each patient-id header below -->
@@ -737,19 +737,16 @@ __DATA__
 ">
 Jump to:
 <ul style="padding-left: 26px;"><!-- TMPL_LOOP NAME=patients -->
-  <li><a href="#<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></a></li>
-<!-- /TMPL_LOOP --></ul>
+  <li><a href="#<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></a></li><!-- /TMPL_LOOP --></ul>
 </div>
 
 <h1>Patient Information</h1>
 <!-- TMPL_LOOP NAME=patients -->
   <h2 id="<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></h2>
   <ul><!-- TMPL_LOOP NAME=linked_files -->
-    <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=diskfilename -->">
-        <!-- TMPL_VAR NAME=displayfilename -->
-    </a></li>
-  <!-- /TMPL_LOOP --></ul>
-  <!-- /TMPL_LOOP -->
+    <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=diskfilename -->"><!-- TMPL_VAR NAME=displayfilename --></a></li><!-- /TMPL_LOOP -->
+  </ul>
+<!-- /TMPL_LOOP -->
 
 <p><small>The end, thank you for reading!</small></p>
 </body>
