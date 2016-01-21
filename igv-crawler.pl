@@ -188,33 +188,33 @@ sub igvFileFilter () {
   # file-types we're actually interested in.
   # based on IGV's supported file formats: https://www.broadinstitute.org/software/igv/FileFormats
   if (
-    $filename =~ /.*\.ba[im]$/                or
-    $filename =~ /.*\.bed/                    or
-    $filename =~ /.*\.bedGraph/               or
-    $filename =~ /.*\.bigbed/                 or
-    $filename =~ /.*\.bigWig/                 or
-    $filename =~ /.*\.birdseye_canary_calls/  or
-    $filename =~ /.*\.broadPeak/              or
-    $filename =~ /.*\.cbs/                    or
-    $filename =~ /.*\.cn/                     or
-    $filename =~ /.*\.gct/                    or
-    $filename =~ /.*\.gff/                    or
-    $filename =~ /.*\.gff3/                   or
-    $filename =~ /.*\.gtf/                    or
-    $filename =~ /.*\.gistic/                 or
-    $filename =~ /.*\.loh/                    or
-    $filename =~ /.*\.maf/                    or
-    $filename =~ /.*\.mut/                    or
-    $filename =~ /.*\.narrowPeak/             or
-    $filename =~ /.*\.psl/                    or
-    $filename =~ /.*\.res/                    or
-    $filename =~ /.*\.seg/                    or
-    $filename =~ /.*\.snp/                    or
-    $filename =~ /.*\.tdf/                    or
-    $filename =~ /.*\.vcf/                    or
-    $filename =~ /.*\.vcf\.gz/                or
-    $filename =~ /.*\.tbi/                    or
-    $filename =~ /.*\.wig/
+    $filename =~ /.*\.ba[im]$/                 or
+    $filename =~ /.*\.bed$/                    or
+    $filename =~ /.*\.bedGraph$/               or
+    $filename =~ /.*\.bigbed$/                 or
+    $filename =~ /.*\.bigWig$/                 or
+    $filename =~ /.*\.birdseye_canary_calls$/  or
+    $filename =~ /.*\.broadPeak$/              or
+    $filename =~ /.*\.cbs$/                    or
+    $filename =~ /.*\.cn$/                     or
+    $filename =~ /.*\.gct$/                    or
+    $filename =~ /.*\.gff$/                    or
+    $filename =~ /.*\.gff3$/                   or
+    $filename =~ /.*\.gtf$/                    or
+    $filename =~ /.*\.gistic$/                 or
+    $filename =~ /.*\.loh$/                    or
+    $filename =~ /.*\.maf$/                    or
+    $filename =~ /.*\.mut$/                    or
+    $filename =~ /.*\.narrowPeak$/             or
+    $filename =~ /.*\.psl$/                    or
+    $filename =~ /.*\.res$/                    or
+    $filename =~ /.*\.seg$/                    or
+    $filename =~ /.*\.snp$/                    or
+    $filename =~ /.*\.tdf$/                    or
+    $filename =~ /.*\.vcf$/                    or
+    $filename =~ /.*\.vcf\.gz$/                or
+    $filename =~ /.*\.tbi$/                    or
+    $filename =~ /.*\.wig$/
   ) {
     addToIndex($filename);
   }
@@ -307,7 +307,7 @@ sub clearOldLinksIn ($) {
 # Populates the publicly-visible public_link_dir with links into the 'private' filesystem.
 # One subfolder per PID containing all links for that patient:
 #
-# public_dir/
+# public_link_dir/
 #   pid_a/
 #     some-link-1
 #     some-link-2
@@ -374,10 +374,9 @@ sub getDisplayNameFor ($) {
 
 
 # Determines a publicly visible name for an absolute filepath.
-# It chops off the leading scandir and flattens directory separators to dashes:
+# It mostly just flattens directory separators to dashes:
 # /my/absolute/results-per-pid-scandir/some_pid/some_analysis/file.txt becomes
-#                                      some_pid-some_analysis-file.txt
-
+# -my-absolute-results-per-pid-scandir-some_pid-some_analysis-file.txt
 sub getLinkNameFor ($) {
   my ($filepath) = @_;
 
