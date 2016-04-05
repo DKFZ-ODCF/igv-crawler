@@ -188,33 +188,33 @@ sub igvFileFilter () {
   # file-types we're actually interested in.
   # based on IGV's supported file formats: https://www.broadinstitute.org/software/igv/FileFormats
   if (
-    $filename =~ /.*\.ba[im]$/                 or
-    $filename =~ /.*\.bed$/                    or
-    $filename =~ /.*\.bedGraph$/               or
-    $filename =~ /.*\.bigbed$/                 or
-    $filename =~ /.*\.bigWig$/                 or
-    $filename =~ /.*\.birdseye_canary_calls$/  or
-    $filename =~ /.*\.broadPeak$/              or
-    $filename =~ /.*\.cbs$/                    or
-    $filename =~ /.*\.cn$/                     or
-    $filename =~ /.*\.gct$/                    or
-    $filename =~ /.*\.gff$/                    or
-    $filename =~ /.*\.gff3$/                   or
-    $filename =~ /.*\.gtf$/                    or
-    $filename =~ /.*\.gistic$/                 or
-    $filename =~ /.*\.loh$/                    or
-    $filename =~ /.*\.maf$/                    or
-    $filename =~ /.*\.mut$/                    or
-    $filename =~ /.*\.narrowPeak$/             or
-    $filename =~ /.*\.psl$/                    or
-    $filename =~ /.*\.res$/                    or
-    $filename =~ /.*\.seg$/                    or
-    $filename =~ /.*\.snp$/                    or
-    $filename =~ /.*\.tdf$/                    or
-    $filename =~ /.*\.vcf$/                    or
-    $filename =~ /.*\.vcf\.gz$/                or
-    $filename =~ /.*\.tbi$/                    or
-    $filename =~ /.*\.wig$/
+    $filename =~ /\.ba[im]$/                 or
+    $filename =~ /\.bed$/                    or
+    $filename =~ /\.bedGraph$/               or
+    $filename =~ /\.bigbed$/                 or
+    $filename =~ /\.bigWig$/                 or
+    $filename =~ /\.birdseye_canary_calls$/  or
+    $filename =~ /\.broadPeak$/              or
+    $filename =~ /\.cbs$/                    or
+    $filename =~ /\.cn$/                     or
+    $filename =~ /\.gct$/                    or
+    $filename =~ /\.gff$/                    or
+    $filename =~ /\.gff3$/                   or
+    $filename =~ /\.gtf$/                    or
+    $filename =~ /\.gistic$/                 or
+    $filename =~ /\.loh$/                    or
+    $filename =~ /\.maf$/                    or
+    $filename =~ /\.mut$/                    or
+    $filename =~ /\.narrowPeak$/             or
+    $filename =~ /\.psl$/                    or
+    $filename =~ /\.res$/                    or
+    $filename =~ /\.seg$/                    or
+    $filename =~ /\.snp$/                    or
+    $filename =~ /\.tdf$/                    or
+    $filename =~ /\.vcf$/                    or
+    $filename =~ /\.vcf\.gz$/                or
+    $filename =~ /\.tbi$/                    or
+    $filename =~ /\.wig$/
   ) {
     addToIndex($filename);
   }
