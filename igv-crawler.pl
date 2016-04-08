@@ -188,33 +188,34 @@ sub igvFileFilter () {
   # file-types we're actually interested in.
   # based on IGV's supported file formats: https://www.broadinstitute.org/software/igv/FileFormats
   if (
-    $filename =~ /\.ba[im]$/                 or
-    $filename =~ /\.bed$/                    or
-    $filename =~ /\.bedGraph$/               or
-    $filename =~ /\.bigbed$/                 or
-    $filename =~ /\.bigWig$/                 or
-    $filename =~ /\.birdseye_canary_calls$/  or
-    $filename =~ /\.broadPeak$/              or
-    $filename =~ /\.cbs$/                    or
-    $filename =~ /\.cn$/                     or
-    $filename =~ /\.gct$/                    or
-    $filename =~ /\.gff$/                    or
-    $filename =~ /\.gff3$/                   or
-    $filename =~ /\.gtf$/                    or
-    $filename =~ /\.gistic$/                 or
-    $filename =~ /\.loh$/                    or
-    $filename =~ /\.maf$/                    or
-    $filename =~ /\.mut$/                    or
-    $filename =~ /\.narrowPeak$/             or
-    $filename =~ /\.psl$/                    or
-    $filename =~ /\.res$/                    or
-    $filename =~ /\.seg$/                    or
-    $filename =~ /\.snp$/                    or
-    $filename =~ /\.tdf$/                    or
-    $filename =~ /\.vcf$/                    or
-    $filename =~ /\.vcf\.gz$/                or
-    $filename =~ /\.tbi$/                    or
-    $filename =~ /\.wig$/
+    $filename =~ /\.(?:
+          bam|bai|
+          bed|
+          bedGraph|bedgraph|
+          bigbed|
+          bigWig|bigwig|
+          birdseye_canary_calls|
+          broadPeak|broadpeak|
+          cbs|
+          cn|
+          gct|
+          gff|
+          gff3|
+          gtf|
+          gistic|
+          loh|
+          maf|
+          mut|
+          narrowPeak|narrowpeak|
+          psl|
+          res|
+          seg|
+          snp|
+          tdf|
+          vcf|vcf\.gz|
+          tbi|
+          wig
+    )$/x
   ) {
     addToIndex($filename);
   }
@@ -530,12 +531,12 @@ sub findFilesWithIndices ($$@) {
   #       .bam       , .bam.bai || .bai,   [....]
 
   # escape extension '.' to be literal dots, not regex any-char
-  my $data_extension  = quotemeta($data_extension);
-  my $index_extension = quotemeta($index_extension);
+  $data_extension  = quotemeta($data_extension);
+  $index_extension = quotemeta($index_extension);
 
   # pre-compile regexes, so perl doesn't need to recheck if the var changed in the grep/map below
-  my $data_regex  = qr/$data_extension$/
-  my $index_regex = qr/$index_extension$/
+  my $data_regex  = qr/$data_extension$/  ;
+  my $index_regex = qr/$index_extension$/ ;
 
   # first, divide our datafiles and indexfiles into separate buckets
   my @found_data    = grep { $_ =~ $data_regex  } @all_files;
