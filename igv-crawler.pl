@@ -212,7 +212,6 @@ sub igvFileFilter () {
           seg|
           snp|
           tdf|
-          vcf|vcf\.gz|
           tbi|
           wig
     )$/x
@@ -466,14 +465,12 @@ sub findDatafilesToDisplay (%) {
     my @seg           = findFilesWithExtension('seg',       @all_files_of_patient);
     my @snp           = findFilesWithExtension('snp',       @all_files_of_patient);
     my @tdf           = findFilesWithExtension('tdf',       @all_files_of_patient);
-    my @vcf           = findFilesWithExtension('vcf',       @all_files_of_patient);
-    my @vcfgz         = findFilesWithIndices('.vcf.gz', '.tbi',  @all_files_of_patient);
-    my @wig           = findFilesWithExtension('Wig',    @all_files_of_patient);
+    my @wig           = findFilesWithExtension('Wig',       @all_files_of_patient);
 
 
     my @combined_result = sort(@bams_having_indices, @bed, @bedgraph, @bigbed, @bigwig, @birdsuite, @broadpeak,
                            @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @loh, @maf, @mut, @narrowpeak, @psl, @res,
-                           @seg, @snp, @tdf, @vcf, @vcfgz, @wig);
+                           @seg, @snp, @tdf, @wig);
 
     # update totals-counter
     $log_total_files_displayed += (scalar @combined_result);
