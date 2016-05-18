@@ -155,7 +155,7 @@ sub main {
 
   finddepth( {
       # gotcha: preprocess is set but not called when follow_fast != 0; (i.e. when argument --followlinks was passed), see File::Find docu
-      preprocess => \&excludeAndLogUnreadableDirs,
+      #preprocess => \&excludeAndLogUnreadableDirs,
       wanted => \&igvFileFilter, # uses globals! stores into global %bambai_file_index, via sub addToIndex()
       follow_fast => $follow_fast, follow_skip => $follow_skip
   }, @scan_dirs);
