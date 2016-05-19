@@ -133,7 +133,7 @@ sub parseArgs () {
   die 'Specified no directories to scan, aborting!' if ((scalar @scan_dirs) == 0);
   
   my $project_name_lower = lc $project_name;
-  my $output_file_path   = catfile( $host_base_dir, $project_name_lower, "$project_name_lower.html");
+  my $output_file_path   = catfile( $host_base_dir, $project_name_lower, "index.html");
   my $link_dir_path      = catdir ( $host_base_dir, $project_name_lower, $link_dir);
   my $link_dir_url       = $www_base_url . "/" . $project_name_lower . "/" . $link_dir; # trailing slash is added in __DATA__ template
 
