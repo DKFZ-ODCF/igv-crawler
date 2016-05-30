@@ -724,9 +724,11 @@ __DATA__
 
 <!-- Right-hanging menu: has quick-links to each patient-id header below -->
 <div id="menu" style="
-  position: fixed; top: 5px; right: 0px;
+  position: fixed;
+  top: 5px;
+  bottom: 5px;
+  right: 0px;
   font-size: small;
-  height: 95%;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 4px 20px 4px 6px;
@@ -749,7 +751,7 @@ Jump to:
     <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=diskfilename -->"><!-- TMPL_VAR NAME=displayfilename --></a></li><!-- /TMPL_LOOP -->
   </ul>
 <!-- /TMPL_LOOP -->
-
+<hr>
 <p><small>The end, thank you for reading!</small></p>
 </body>
 </html>
