@@ -527,24 +527,19 @@ sub findFilesWithIndices ($$@) {
   my ($data_extension, $index_extension, @all_files) = @_;
   #       .bam       , .bam.bai || .bai,   [....]
 
-  # escape extension '.' to be literal dots, not regex any-char
-  $data_extension  = quotemeta($data_extension);
-  $index_extension = quotemeta($index_extension);
-
-  # pre-compile regexes, so perl doesn't need to recheck if the var changed in the grep/map below
-  my $data_regex  = qr/$data_extension$/  ;
-  my $index_regex = qr/$index_extension$/ ;
+  my $data_pattern  = quotemeta($data_extension)  . '$';
+  my $index_pattern = quotemeta($index_extension) . '$';
 
   # first, divide our datafiles and indexfiles into separate buckets
-  my @found_data    = grep { $_ =~ $data_regex  } @all_files;
-  my @found_indices = grep { $_ =~ $index_regex } @all_files;
+  my @found_data    = grep { $_ =~ /$data_pattern/  } @all_files;
+  my @found_indices = grep { $_ =~ /$index_pattern/ } @all_files;
 
   # second, map each datafile to its _expected_ indexfile
   my %expected_indices = map {
     my $found_data = $_;
 
     my $expected_index = $found_data;
-    $expected_index =~ s/$data_regex/$index_extension/;
+    $expected_index =~ s/$data_pattern/$index_extension/;
 
     # 'return' map k,v pair
     # NOTE: key,value swapped in counterintuitive way for cleverness below
