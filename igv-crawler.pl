@@ -208,8 +208,6 @@ sub igvFileFilter () {
     $filename =~ /\.seg$/                    or
     $filename =~ /\.snp$/                    or
     $filename =~ /\.tdf$/                    or
-    $filename =~ /\.vcf$/                    or
-    $filename =~ /\.vcf\.gz$/                or
     $filename =~ /\.tbi$/                    or
     $filename =~ /\.wig$/
   ) {
