@@ -35,6 +35,8 @@ my $www_base_url  = "https://otpfiles.dkfz.de";
 # subdir name inside $host_base_dir where to store symlinks for both file-system and URL
 my $link_dir = "links";
 
+my $log_dir = "/home/icgcdata/logs";
+
 # END CONSTANTS #####################################################################
 
 
@@ -582,10 +584,20 @@ sub writeContentsToFile ($$) {
 sub printReport () {
   print "== After-action report for $project_name ==\n";
 
+  # log once to STDOUT, in long or short form depending on CLI input ...
   if ($report_mode eq "counts") {
     printShortReport();
   } elsif ($report_mode eq "full") {
-    printLongReport();
+    printLongReport(*STDOUT);
+  }
+
+  # .. and also log (always long-form) to a file
+  my $log_file = catfile($log_dir, $project_name . ".log");
+  my $success = open( my $fh, ">", $log_file);
+  if ($success) {
+    printLongReport($fh);
+  } else {
+    warn "Couldn't open $log_file for writing";
   }
 }
 
@@ -602,28 +614,28 @@ sub printShortReport () {
 }
 
 
-sub printLongReport () {
-  print "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
-        "total patients displayed:               $log_total_pids_displayed\n" .
-        "total files displayed:                  $log_total_files_displayed\n";
+sub printLongReport ($) {
+  my ($fh) = @_;
 
-  printWithHeader("undetectable PIDs",      @log_pid_undetectable_paths);
-  printWithHeader("files without index",    @log_files_without_indices);
-  printWithHeader("symlink name clashes",   @log_symlink_clashes);
+  print $fh "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
+            "total patients displayed:               $log_total_pids_displayed\n" .
+            "total files displayed:                  $log_total_files_displayed\n";
 
-  printWithHeader("Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
+  printWithHeader($fh, "undetectable PIDs",      @log_pid_undetectable_paths);
+  printWithHeader($fh, "files without index",    @log_files_without_indices);
+  printWithHeader($fh, "symlink name clashes",   @log_symlink_clashes);
 
-  #printWithHeader("orphaned index files",   @log_orphaned_indices)
+  printWithHeader($fh, "Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
 }
 
 
-sub printWithHeader ($@) {
-  my ($header, @list) = @_;
+sub printWithHeader ($$@) {
+  my ($fh, $header, @list) = @_;
   my $count = scalar @list;
 
   my $indent = "  ";
-  print "=== $count $header ===\n" .
-        "$indent" . join("\n$indent", sort @list) . "\n";
+  print $fh "=== $count $header ===";
+  print $fh "\n$indent" . join("\n$indent", sort @list) . "\n";
 }
 
 
