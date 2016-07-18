@@ -635,6 +635,10 @@ __DATA__
 <html>
 <head>
   <title>IGV files for <!-- TMPL_VAR NAME=project_name --></title>
+  <style type="text/css" media="screen"><!--
+    H2  { background: lightgray }
+  --></style>
+
 </head>
 <body style="padding-right: 280px;">
 
