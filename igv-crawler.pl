@@ -26,12 +26,13 @@ use Data::Dumper;
 
 # the local FS dir where apache looks for stuff to host
 #   script will create subdirs in it named 'lc $project_name'
+#   (must have trailing slash!)
 my $host_base_dir = "/public-otp-files/";
 
-# the externally visible URL for 'host_base_dir' (NO TRAILING SLASH!)
+# the externally visible URL for $host_base_dir (NO TRAILING SLASH!)
 my $www_base_url  = "https://otpfiles.dkfz.de";
 
-# subdir name where to store symlinks for both file-system and URL
+# subdir name inside $host_base_dir where to store symlinks for both file-system and URL
 my $link_dir = "links";
 
 # END CONSTANTS #####################################################################
