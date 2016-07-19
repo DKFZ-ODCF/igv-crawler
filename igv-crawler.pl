@@ -61,7 +61,6 @@ my @log_undisplayable_paths;      # paths that didn't match the displaymode=rege
 my @log_symlink_clashes;          # Currently filenames must be unique per pid, because the symlink uses only the basename; log if this causes problems (fix to come?)
 my @log_pid_undetectable_paths;   # paths that we couldn't derive a pid from
 my @log_files_without_indices;    # files we had to filter out due to missing indices
-my @log_orphaned_indices;         # leftover index-files we found, whose datafile was removed
 #####################################################################################
 
 # THE var: global list to keep track of all the bam+bai files we have found
@@ -156,6 +155,10 @@ sub main {
   }
 
   finddepth( {
+      # make a best-effort attempt to not waste time on crawling hidden .somedir.
+      # gotcha: preprocess is set but not called when follow_fast != 0; (i.e. when argument --followlinks was passed)
+      # so we cannot depend on this having run. For more WTF-ness, see the File::Find perldoc
+      preprocess => \&excludeDotHiddenDirs,
       wanted => \&igvFileFilter, # uses globals! stores into global %bambai_file_index, via sub addToIndex()
       follow_fast => $follow_fast, follow_skip => $follow_skip
   }, @scan_dirs);
@@ -184,6 +187,11 @@ sub igvFileFilter () {
   # fail-fast on simple cases.
   return undef if -d $filename;   # skip directories, they're crawled, but never indexed
   return undef if -z $filename;   # skip empty/zero-size files
+
+  # exclude hidden .files and .folders: /.foo
+  # Gotcha: We must do this "again", because the excludeDotHiddenDirs() preprocess-function
+  # is SKIPPED depending on other Find::finddepth parameters (WTF: File::Find perldoc).
+  return undef if $filename =~ /\/\./;
 
   # file-types we're actually interested in.
   # based on IGV's supported file formats: https://www.broadinstitute.org/software/igv/FileFormats
@@ -219,6 +227,23 @@ sub igvFileFilter () {
 
   # and we're done, but File::Find doesn't expect a return value.
   return undef;
+}
+
+
+# Used by File::Find::finddepth in main()
+# Excludes .hidden directories that finddepth is about to descend into,
+# thus (hopefully) saving some time.
+#
+# in any case, .hidden files and folders are also (again) excluded in addToIndex(),
+# since this method isn't called in all cases (see finddepth invocation above)
+sub excludeDotHiddenDirs (@) {
+  my @preprocess_files = @_;
+
+  my @nonHidden = grep {
+    if ( $_ =~ /^\./ ) { 0; } else { 1; }
+  } @preprocess_files;
+
+  return @nonHidden;
 }
 
 
@@ -527,7 +552,6 @@ sub findFilesWithIndices ($$@) {
 
   # remove undefs resulting from leftover index-files whose data-file was removed/not-found
   # (removing non-existant keys returns an undef)
-  # TODO: figure out how to log the matching found_index to @log_orphaned_indices
   @data_having_index = grep { defined } @data_having_index;
 
   return @data_having_index;
