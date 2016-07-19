@@ -158,7 +158,7 @@ sub main {
       # make a best-effort attempt to not waste time on crawling hidden .somedir.
       # gotcha: preprocess is set but not called when follow_fast != 0; (i.e. when argument --followlinks was passed)
       # so we cannot depend on this having run. For more WTF-ness, see the File::Find perldoc
-      preprocess => \&excludeDotHiddenDirs,
+      preprocess => \&excludeBoringDirs,
       wanted => \&igvFileFilter, # uses globals! stores into global %bambai_file_index, via sub addToIndex()
       follow_fast => $follow_fast, follow_skip => $follow_skip
   }, @scan_dirs);
@@ -236,14 +236,17 @@ sub igvFileFilter () {
 #
 # in any case, .hidden files and folders are also (again) excluded in addToIndex(),
 # since this method isn't called in all cases (see finddepth invocation above)
-sub excludeDotHiddenDirs (@) {
-  my @preprocess_files = @_;
+sub excludeBoringDirs (@) {
+  my @folder_contents = @_;
 
-  my @nonHidden = grep {
-    if ( $_ =~ /^\./ ) { 0; } else { 1; }
-  } @preprocess_files;
+  my @nonBoring = grep {
+    if ( 
+        $_ =~ /^\./ or
+        $_ =~ /roddyExecutionStore/
+    ) { 0; } else { 1; }
+  } @folder_contents;
 
-  return @nonHidden;
+  return @nonBoring;
 }
 
 
