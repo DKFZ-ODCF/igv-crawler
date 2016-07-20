@@ -680,12 +680,12 @@ sub printLongReport ($) {
   printWithHeader($fh, "symlink name clashes",   @log_symlink_clashes);
 
   printWithHeader($fh, "Unreadable paths",       @log_unreadable_paths);
-  print $fh "=== Unreadable subdirectories (Aggregate counts) ===\n  " . join(
-      "\n  ",
-      map {
-        sprintf("%-25s: % 4d", $_, ${log_unreadable_summary{$_}})
-      } sort keys %log_unreadable_summary
-    ) . "\n";
+  print $fh "=== Unreadable subdirectories (Aggregate counts) ===\n";
+  while ( my ($subdir, $count) = each %log_unreadable_summary ) {
+    # only print aggregate counts for directories occuring more than once
+    print $fh sprintf("  %-25s: % 4d\n", $subdir, $count) if ($count > 1);
+  }
+  print "\n";
 
   printWithHeader($fh, "Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
 }
