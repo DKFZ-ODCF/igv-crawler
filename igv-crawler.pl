@@ -55,6 +55,9 @@ my $follow_symlinks = 0;          # whether to follow symlinks (use of this opti
 # We keep some counters/lists to see what kinds of trouble we run in to.
 #
 my $log_total_files_scanned = 0;  # total number of files seen by the find-filter (excludes unreadable directories)
+my $log_deepest_scan_depth =0;
+my $log_shallowest_find_depth =999;
+my $log_deepest_find_depth =0;
 my $log_total_files_displayed =0; # number of files that are displayed
 my $log_total_pids_displayed =0;  # number of distinct patients all the files belong to
 my @log_undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
@@ -184,8 +187,17 @@ sub main {
     File::Find::Rule->new
       # for all files, some bookkeeping
       ->exec( sub ($$$) {
+        my ($shortname, $path, $fullname) = @_;
+
         # count how many files we scan
         $log_total_files_scanned += 1;
+
+        # log how far down the rabbit-hole we descend
+        # (to see if setting maxdepth may help)
+        my $depth = $fullname =~ tr/\//\//;
+        if ($depth > $log_deepest_scan_depth) {
+          $log_deepest_scan_depth = $depth;
+        }
 
         # don't discard anything
         return 1;
@@ -246,6 +258,17 @@ sub main {
   while (defined ( my $matching_file = $rule->match )) {
     # store the match in our global hash
     addToIndex($matching_file);
+
+    print $matching_file . "\n";
+
+    # update the depth-range where we find stuff
+    my $depth = $matching_file =~ tr/\//\//;
+    if ($depth > $log_deepest_find_depth) {
+      $log_deepest_find_depth = $depth;
+    }
+    if ($depth < $log_shallowest_find_depth) {
+      $log_shallowest_find_depth = $depth;
+    }
   }
 
   # remove (potentially outdated/stale) links from previous run.
@@ -644,6 +667,9 @@ sub printShortReport () {
   print "total files scanned (excl. unreadable): " .        $log_total_files_scanned    . "\n" .
         "total patients displayed:               " .        $log_total_pids_displayed   . "\n" .
         "total files displayed:                  " .        $log_total_files_displayed  . "\n" .
+        "deepest directory scanned:              " .        $log_deepest_scan_depth     . "\n" .
+        "deepest file found:                     " .        $log_deepest_find_depth     . "\n" .
+        "shallowest file found:                  " .        $log_shallowest_find_depth  . "\n" .
         "undetectable pids:                      " . scalar @log_pid_undetectable_paths . "\n" .
         "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n" .
         "symlink clashes:                        " . scalar @log_symlink_clashes        . "\n" .
@@ -658,7 +684,10 @@ sub printLongReport ($) {
 
   print $fh "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
             "total patients displayed:               $log_total_pids_displayed\n" .
-            "total files displayed:                  $log_total_files_displayed\n";
+            "total files displayed:                  $log_total_files_displayed\n".
+            "deepest directory scanned (from / ):    $log_deepest_scan_depth\n" .
+            "deepest file found        (from / ):    $log_deepest_find_depth\n" .
+            "shallowest file found     (from / ):    $log_shallowest_find_depth\n";
 
   printWithHeader($fh, "undetectable PIDs",      @log_pid_undetectable_paths);
   printWithHeader($fh, "files without index",    @log_files_without_indices);
