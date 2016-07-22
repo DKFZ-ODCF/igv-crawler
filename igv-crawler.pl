@@ -12,7 +12,7 @@ use 5.010;
 # Some more documentation at xWiki:
 # https://ibios.dkfz.de/xwiki/bin/view/Database/Making+%28OTP%29+BamFiles+available+online
 
-use File::Find;
+use File::Find::Rule;
 use File::Path;
 use File::Spec::Functions;
 use HTML::Template;
@@ -178,20 +178,75 @@ sub main {
   print "Scanning $project_name for IGV-relevant files in:\n";
   print "  $_\n" for @scan_dirs;
 
-  # Follow symlinks or not?
-  my ($follow_fast, $follow_skip) = (undef, undef); # default: don't follow anything
+  my @skip_dirs = [ 'roddyExecutionStore', 'test-exclude' ];
+
+  my $rule = (
+    File::Find::Rule->new
+      # for all files, some bookkeeping
+      ->exec( sub ($$$) {
+        # count how many files we scan
+        $log_total_files_scanned += 1;
+
+        # don't discard anything
+        return 1;
+      } )
+
+      # exclude and don't descend into .hidden and roddyExecutionStore folders
+      ->not(
+        File::Find::Rule->new
+        ->directory
+        ->or(
+          File::Find::Rule->name( qr/^\..+/ ), # skip .hidden directories
+          File::Find::Rule->name( @skip_dirs ) # skip user-defined directories
+        )
+        ->prune
+        ->discard
+      )
+
+      # include files with IGV extensions (if they're not empty placeholders)
+      ->file
+      ->name(
+        '*.bai',
+        '*.bam',
+        '*.bed',
+        '*.bedGraph',
+        '*.bigbed',
+        '*.bigWig',
+        '*.birdseye_canary_calls',
+        '*.broadPeak',
+        '*.cbs',
+        '*.cn',
+        '*.gct',
+        '*.gff',
+        '*.gff3',
+        '*.gtf',
+        '*.gistic',
+        '*.loh',
+        '*.maf',
+        '*.mut',
+        '*.narrowPeak',
+        '*.psl',
+        '*.res',
+        '*.seg',
+        '*.snp',
+        '*.tdf',
+        '*.tbi',
+        '*.wig'
+      )
+      #->not_empty
+  );
+
+  # Follow symlinks if specified on command-line
   if ($follow_symlinks == 1) {
-    ($follow_fast, $follow_skip) = (1, 2)  # (follow symlinks, silently ignore duplicate files)
+    $rule->extras({follow_fast => 1, follow_skip => 2});
   }
 
-  finddepth( {
-      # make a best-effort attempt to not waste time on crawling hidden .somedir.
-      # gotcha: preprocess is set but not called when follow_fast != 0; (i.e. when argument --followlinks was passed)
-      # so we cannot depend on this having run. For more WTF-ness, see the File::Find perldoc
-      preprocess => \&excludeBoringDirs,
-      wanted => \&igvFileFilter, # uses globals! stores into global %bambai_file_index, via sub addToIndex()
-      follow_fast => $follow_fast, follow_skip => $follow_skip
-  }, @scan_dirs);
+  # iterate over matching files
+  $rule = $rule->start( @scan_dirs );
+  while (defined ( my $matching_file = $rule->match )) {
+    # store the match in our global hash
+    addToIndex($matching_file);
+  }
 
   # remove (potentially outdated/stale) links from previous run.
   clearOldLinksIn($link_dir_path);
@@ -204,80 +259,6 @@ sub main {
 
   #feedback for poor admin
   printReport();
-}
-
-
-# Used by File::Find::finddepth in main()
-# It determines if a file is relevant to IGV (either a file to display, or an accompanying index-file).
-# If so, the file is added to the global list via sub addToIndex()
-sub igvFileFilter () {
-  $log_total_files_scanned++;
-
-  my $filename = $File::Find::name;
-
-  # fail-fast on simple cases.
-  return undef if -d $filename;   # skip directories, they're crawled, but never indexed
-  return undef if -z $filename;   # skip empty/zero-size files
-
-  # exclude hidden .files and .folders: /.foo
-  # Gotcha: We must do this "again", because the excludeDotHiddenDirs() preprocess-function
-  # is SKIPPED depending on other Find::finddepth parameters (WTF: File::Find perldoc).
-  return undef if $filename =~ /\/\./;
-
-  # file-types we're actually interested in.
-  # based on IGV's supported file formats: https://www.broadinstitute.org/software/igv/FileFormats
-  if (
-    $filename =~ /\.ba[im]$/                 or
-    $filename =~ /\.bed$/                    or
-    $filename =~ /\.bedGraph$/               or
-    $filename =~ /\.bigbed$/                 or
-    $filename =~ /\.bigWig$/                 or
-    $filename =~ /\.birdseye_canary_calls$/  or
-    $filename =~ /\.broadPeak$/              or
-    $filename =~ /\.cbs$/                    or
-    $filename =~ /\.cn$/                     or
-    $filename =~ /\.gct$/                    or
-    $filename =~ /\.gff$/                    or
-    $filename =~ /\.gff3$/                   or
-    $filename =~ /\.gtf$/                    or
-    $filename =~ /\.gistic$/                 or
-    $filename =~ /\.loh$/                    or
-    $filename =~ /\.maf$/                    or
-    $filename =~ /\.mut$/                    or
-    $filename =~ /\.narrowPeak$/             or
-    $filename =~ /\.psl$/                    or
-    $filename =~ /\.res$/                    or
-    $filename =~ /\.seg$/                    or
-    $filename =~ /\.snp$/                    or
-    $filename =~ /\.tdf$/                    or
-    $filename =~ /\.tbi$/                    or
-    $filename =~ /\.wig$/
-  ) {
-    addToIndex($filename);
-  }
-
-  # and we're done, but File::Find doesn't expect a return value.
-  return undef;
-}
-
-
-# Used by File::Find::finddepth in main()
-# Excludes .hidden directories that finddepth is about to descend into,
-# thus (hopefully) saving some time.
-#
-# in any case, .hidden files and folders are also (again) excluded in addToIndex(),
-# since this method isn't called in all cases (see finddepth invocation above)
-sub excludeBoringDirs (@) {
-  my @folder_contents = @_;
-
-  my @nonBoring = grep {
-    if ( 
-        $_ =~ /^\./ or
-        $_ =~ /roddyExecutionStore/
-    ) { 0; } else { 1; }
-  } @folder_contents;
-
-  return @nonBoring;
 }
 
 
