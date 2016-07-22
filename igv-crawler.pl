@@ -45,6 +45,7 @@ my $log_dir = "/home/icgcdata/logs";
 #
 my $project_name = 'demo';        # defaults to demo-settings, to not-break prod when someone forgets to specify
 my @scan_dirs;                    # list of directories that will be scanned
+my @prune_dirs;                   # list of sub-directories inside @scan_dirs that will not be descended into. Can be shell globs, but not over directories. i.e. '*foo' works, 'foo/subsegment*' doesn't
 my $pid_regex;                    # every file-path is run through this regex to extract the PID (pid-pattern MUST be first capture group)
 my $display_mode = "nameonly";    # what to show in the HTML-file; defaults to historical behaviour: show filename without parent dir-path
 my $display_regex;                # parsed version of $display_mode, in case it is a regex
@@ -123,6 +124,7 @@ main();
 sub parseArgs () {
   GetOptions ('project=s'   => \$project_name,   # will be used as "the $project_name project", as well as (lowercased) subdir name
               'scandir=s'   => \@scan_dirs,      # where to look for IGV-relevant files
+              'prunedir=s'  => \@prune_dirs,     # named sub-directories to skip.
               'pidformat=s' => \$pid_regex,      # the regex used to extract the patient_id from a file path.
               'display=s'   => \$display_mode,   # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
               'report=s'    => \$report_mode,    # what to report at end-of-execution: "counts" or "full"
@@ -165,7 +167,9 @@ sub parseArgs () {
   #    --> split all strings
   @scan_dirs = split(',', join(',', @scan_dirs));
   die 'Specified no directories to scan, aborting!' if ((scalar @scan_dirs) == 0);
-  
+
+  @prune_dirs = split(',', join(',', @prune_dirs));
+
   my $project_name_lower = lc $project_name;
   my $output_file_path   = catfile( $host_base_dir, $project_name_lower, "index.html");
   my $link_dir_path      = catdir ( $host_base_dir, $project_name_lower, $link_dir);
@@ -180,8 +184,6 @@ sub main {
 
   print "Scanning $project_name for IGV-relevant files in:\n";
   print "  $_\n" for @scan_dirs;
-
-  my @skip_dirs = [ 'roddyExecutionStore', 'test-exclude' ];
 
   my $rule = (
     File::Find::Rule->new
@@ -208,8 +210,9 @@ sub main {
         File::Find::Rule->new
         ->directory
         ->or(
-          File::Find::Rule->name( qr/^\..+/ ), # skip .hidden directories
-          File::Find::Rule->name( @skip_dirs ) # skip user-defined directories
+          File::Find::Rule->name( qr/^\..+/ ),             # skip .hidden directories
+          File::Find::Rule->name( 'roddyExecutionStore' ), # skip roddy working directories
+          File::Find::Rule->name( @prune_dirs )            # skip user-defined directories
         )
         ->prune
         ->discard
