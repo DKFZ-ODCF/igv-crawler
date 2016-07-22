@@ -259,8 +259,6 @@ sub main {
     # store the match in our global hash
     addToIndex($matching_file);
 
-    print $matching_file . "\n";
-
     # update the depth-range where we find stuff
     my $depth = $matching_file =~ tr/\//\//;
     if ($depth > $log_deepest_find_depth) {
