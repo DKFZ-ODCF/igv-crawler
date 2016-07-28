@@ -46,6 +46,7 @@ my $log_dir = "/home/icgcdata/logs";
 my $project_name = 'demo';        # defaults to demo-settings, to not-break prod when someone forgets to specify
 my @scan_dirs;                    # list of directories that will be scanned
 my @prune_dirs;                   # list of sub-directories inside @scan_dirs that will not be descended into. Can be shell globs, but not over directories. i.e. '*foo' works, 'foo/subsegment*' doesn't
+my @prune_files;                  # list of globs of filenames to ignore
 my $pid_regex;                    # every file-path is run through this regex to extract the PID (pid-pattern MUST be first capture group)
 my $display_mode = "nameonly";    # what to show in the HTML-file; defaults to historical behaviour: show filename without parent dir-path
 my $display_regex;                # parsed version of $display_mode, in case it is a regex
@@ -59,6 +60,7 @@ my $log_total_files_scanned = 0;  # total number of files seen by the find-filte
 my $log_deepest_scan_depth =0;
 my $log_shallowest_find_depth =999;
 my $log_deepest_find_depth =0;
+my $log_ignored_files =0;
 my $log_total_files_displayed =0; # number of files that are displayed
 my $log_total_pids_displayed =0;  # number of distinct patients all the files belong to
 my @log_undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
@@ -125,6 +127,7 @@ sub parseArgs () {
   GetOptions ('project=s'   => \$project_name,   # will be used as "the $project_name project", as well as (lowercased) subdir name
               'scandir=s'   => \@scan_dirs,      # where to look for IGV-relevant files
               'prunedir=s'  => \@prune_dirs,     # named sub-directories to skip and not descend into.
+              'skipfile=s'  => \@prune_files,    # named sub-directories to skip.
               'pidformat=s' => \$pid_regex,      # the regex used to extract the patient_id from a file path.
               'display=s'   => \$display_mode,   # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
               'report=s'    => \$report_mode,    # what to report at end-of-execution: "counts" or "full"
@@ -207,15 +210,23 @@ sub main {
 
       # exclude and don't descend into .hidden and roddyExecutionStore folders
       ->not(
-        File::Find::Rule->new
-        ->directory
-        ->or(
-          File::Find::Rule->name( qr/^\..+/ ),             # skip .hidden directories (writing it as '.*' doesn't seem to work, that excludes everything?!)
-          File::Find::Rule->name( 'roddyExecutionStore' ), # skip roddy working directories
-          File::Find::Rule->name( @prune_dirs )            # skip user-defined directories
+        File::Find::Rule->or(
+          File::Find::Rule->new
+          ->directory
+          ->or(
+            File::Find::Rule->name( qr/^\..+/ ),             # skip .hidden directories (writing it as '.*' doesn't seem to work, that excludes everything?!)
+            File::Find::Rule->name( 'roddyExecutionStore' ), # skip roddy working directories
+            File::Find::Rule->name( @prune_dirs )            # skip user-defined directories
+          )
+          ->prune
+          ->discard
+        ,
+          File::Find::Rule->new
+          ->file
+          ->name(@prune_files)
+          ->exec(sub ($$$) { $log_ignored_files += 1; return 1; })
+          ->discard
         )
-        ->prune
-        ->discard
       )
 
       # include files with IGV extensions (if they're not empty placeholders)
@@ -671,6 +682,7 @@ sub printShortReport () {
         "deepest directory scanned:              " .        $log_deepest_scan_depth     . "\n" .
         "deepest file found:                     " .        $log_deepest_find_depth     . "\n" .
         "shallowest file found:                  " .        $log_shallowest_find_depth  . "\n" .
+        "ignored files:                          " .        $log_ignored_files          . "\n" .
         "undetectable pids:                      " . scalar @log_pid_undetectable_paths . "\n" .
         "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n" .
         "symlink clashes:                        " . scalar @log_symlink_clashes        . "\n" .
@@ -688,7 +700,8 @@ sub printLongReport ($) {
             "total files displayed:                  $log_total_files_displayed\n".
             "deepest directory scanned (from / ):    $log_deepest_scan_depth\n" .
             "deepest file found        (from / ):    $log_deepest_find_depth\n" .
-            "shallowest file found     (from / ):    $log_shallowest_find_depth\n";
+            "shallowest file found     (from / ):    $log_shallowest_find_depth\n" .
+            "ignored files:                          $log_shallowest_find_depth\n";
 
   printWithHeader($fh, "undetectable PIDs",      @log_pid_undetectable_paths);
   printWithHeader($fh, "files without index",    @log_files_without_indices);
