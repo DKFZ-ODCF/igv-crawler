@@ -259,7 +259,7 @@ sub main {
         '*.tbi',
         '*.wig'
       )
-      #->not_empty
+      ->not_empty
   );
 
   # Follow symlinks if specified on command-line
