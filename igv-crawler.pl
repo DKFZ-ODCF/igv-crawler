@@ -124,7 +124,7 @@ main();
 sub parseArgs () {
   GetOptions ('project=s'   => \$project_name,   # will be used as "the $project_name project", as well as (lowercased) subdir name
               'scandir=s'   => \@scan_dirs,      # where to look for IGV-relevant files
-              'prunedir=s'  => \@prune_dirs,     # named sub-directories to skip.
+              'prunedir=s'  => \@prune_dirs,     # named sub-directories to skip and not descend into.
               'pidformat=s' => \$pid_regex,      # the regex used to extract the patient_id from a file path.
               'display=s'   => \$display_mode,   # either the keyword "nameonly" or "fullpath", or a regex whose capture-groups will be listed.
               'report=s'    => \$report_mode,    # what to report at end-of-execution: "counts" or "full"
@@ -210,7 +210,7 @@ sub main {
         File::Find::Rule->new
         ->directory
         ->or(
-          File::Find::Rule->name( qr/^\..+/ ),             # skip .hidden directories
+          File::Find::Rule->name( qr/^\..+/ ),             # skip .hidden directories (writing it as '.*' doesn't seem to work, that excludes everything?!)
           File::Find::Rule->name( 'roddyExecutionStore' ), # skip roddy working directories
           File::Find::Rule->name( @prune_dirs )            # skip user-defined directories
         )
@@ -695,7 +695,7 @@ sub printLongReport ($) {
   printWithHeader($fh, "symlink name clashes",   @log_symlink_clashes);
 
   printWithHeader($fh, "Unreadable paths",       @log_unreadable_paths);
-  print $fh "=== Unreadable subdirectories (Aggregate counts) ===\n";
+  print $fh "=== Recurring unreadable subdirectories ===\n";
   while ( my ($subdir, $count) = each %log_unreadable_summary ) {
     # only print aggregate counts for directories occuring more than once
     print $fh sprintf("  %-25s: % 4d\n", $subdir, $count) if ($count > 1);
