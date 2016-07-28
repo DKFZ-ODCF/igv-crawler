@@ -171,7 +171,8 @@ sub parseArgs () {
   @scan_dirs = split(',', join(',', @scan_dirs));
   die 'Specified no directories to scan, aborting!' if ((scalar @scan_dirs) == 0);
 
-  @prune_dirs = split(',', join(',', @prune_dirs));
+  @prune_dirs  = split(',', join(',', @prune_dirs));
+  @prune_files = split(',', join(',', @prune_files));
 
   my $project_name_lower = lc $project_name;
   my $output_file_path   = catfile( $host_base_dir, $project_name_lower, "index.html");
