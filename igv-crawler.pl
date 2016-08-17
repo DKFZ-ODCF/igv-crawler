@@ -407,9 +407,13 @@ sub getDisplayNameFor ($) {
     # example path:  /icgc/dkfzlsdf/analysis/hipo/hipo_035/data_types/ChIPseq_v4/results_per_pid/H035-137M/alignment/H035-137M.cell04.H3.sorted.bam
     # example regex: /icgc/dkfzlsdf/(analysis|project)/hipo/(hipo_035)/data_types/([-_ \w\d]+)/(?:results_per_pid/)*(.+)
     my @display_items = ($filepath =~ $display_regex);
+
+    # if the display_regex contains unused capture groups (e.g. the 'wrong' branch of alternations), they emit unitialized captures in their result.
+    # to prevent "use of uninitialized value" for each and every processing of such a result, strip any uninitialized captures
+    @display_items = grep { defined } @display_items;
+
     if (scalar @display_items != 0) {
       return join('&nbsp;&raquo;&nbsp;', @display_items);
-
     } else { # paths we can't display nicely, we just display it in all their horrid glory
       push @log_undisplayable_paths, $filepath;
       return $filepath;
