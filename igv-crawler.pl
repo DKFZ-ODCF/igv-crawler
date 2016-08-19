@@ -744,7 +744,15 @@ __DATA__
   <title><!-- TMPL_VAR NAME=project_name --> IGV linker</title>
   <style type="text/css" media="screen"><!--
     /* visual separation of patients */
-    H2  { background: lightgray }
+    H2  {
+      background: lightgray;
+      margin-top:    1.2em;
+      margin-bottom:   0em;
+    }
+    UL {
+      margin-top: 0.7em;   /* draw pid-links closer to their heading */
+      padding-left: 1.6em; /* reduce indent of bullet points */
+    }
 
     /* reduce visual clutter of links, otherwise 90% of the page is underlined */
     A:link     { text-decoration-line: none }
@@ -754,7 +762,7 @@ __DATA__
   --></style>
 
 </head>
-<body style="padding-right: 280px;">
+<body style="margin-right: 280px;">
 
 <h1 id="page-title"><!-- TMPL_VAR NAME=project_name --> IGV linker</h1>
 
@@ -804,7 +812,7 @@ __DATA__
   white-space: nowrap;
 ">
 Jump to:
-<ul style="padding-left: 26px;"><!-- TMPL_LOOP NAME=patients -->
+<ul><!-- TMPL_LOOP NAME=patients -->
   <li><a href="#<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></a></li><!-- /TMPL_LOOP --></ul>
 </div>
 
