@@ -745,6 +745,12 @@ __DATA__
   <style type="text/css" media="screen"><!--
     /* visual separation of patients */
     H2  { background: lightgray }
+
+    /* reduce visual clutter of links, otherwise 90% of the page is underlined */
+    A:link     { text-decoration-line: none }
+    A:visited  { text-decoration-line: none }
+    A:hover    { text-decoration-line: underline }
+    A:active   { text-decoration-line: underline }
   --></style>
 
 </head>
