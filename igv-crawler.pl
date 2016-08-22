@@ -366,30 +366,23 @@ sub makeAllFileSystemLinks ($%) {
   print "creating links in $public_link_dir\n";
 
   foreach my $patient_id (keys %files_per_patient_id) {
-    my $public_pid_dir = makeDirectoryFor($public_link_dir, $patient_id);
     foreach my $file_to_link (@{ $files_per_patient_id{$patient_id} }) {
-      my $filename = getLinkNameFor($file_to_link);
+      my $filename = getLinkNameFor($patient_id, $file_to_link);
 
-      my $public_path = catfile($public_pid_dir, $filename);
+      my $public_path = catfile($public_link_dir, $filename);
       if (-l $public_path) { # the link we want to create was already made for another file in this pid; this isn't from a previous run because this parent dir is cleared by clearOldLinksIn() before this
         my $old_target = readlink $public_path;
 
         push @log_symlink_clashes, "$old_target -> $file_to_link";
       }
 
+      # $filename will probably contain sub-directories, create those
+      my ($ignored_volume, $link_dir, $ignored_basename) = File::Spec->splitpath($public_path);  # effectively: `dirname $public_path`
+      mkpath($link_dir) unless -d $link_dir;
+
       symlink $file_to_link, $public_path;
     }
   }
-}
-
-
-sub makeDirectoryFor ($$) {
-  my ($link_target_dir, $patient_id) = @_;
-
-  my $path = catfile($link_target_dir, $patient_id);
-  mkpath($path) unless -d $path;
-
-  return $path;
 }
 
 
@@ -426,8 +419,8 @@ sub getDisplayNameFor ($) {
 # It mostly just flattens directory separators to dashes:
 # /my/absolute/results-per-pid-scandir/some_pid/some_analysis/file.txt becomes
 # -my-absolute-results-per-pid-scandir-some_pid-some_analysis-file.txt
-sub getLinkNameFor ($) {
-  my ($filepath) = @_;
+sub getLinkNameFor ($$) {
+  my ($pid, $filepath) = @_;
 
   # avoid turning the links-per-pid subdir into a maze of subdirs
   # just keep a flat list of links under there.
@@ -435,7 +428,7 @@ sub getLinkNameFor ($) {
   my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
   my @path_elems = File::Spec->splitdir($dir);
   push @path_elems, $filename;
-  return join("-", @path_elems);
+  return catfile($pid, join("-", @path_elems));
 }
 
 
@@ -640,7 +633,7 @@ sub formatPatientDataForTemplate (%) {
         # inner 'list' of filenames
         my $filename = $_;
         {
-          diskfilename    => getLinkNameFor($filename),
+          diskfilename    => getLinkNameFor($pid, $filename),
           displayfilename => getDisplayNameFor($filename)
         }
       } @{$files_per_pid{$pid}} ]
@@ -820,7 +813,7 @@ Jump to:
 <!-- TMPL_LOOP NAME=patients -->
   <h2 id="<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></h2>
   <ul class="files"><!-- TMPL_LOOP NAME=linked_files -->
-    <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=patient_id -->/<!-- TMPL_VAR NAME=diskfilename -->"><!-- TMPL_VAR NAME=displayfilename --></a></li><!-- /TMPL_LOOP -->
+    <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=diskfilename -->"><!-- TMPL_VAR NAME=displayfilename --></a></li><!-- /TMPL_LOOP -->
   </ul>
 <!-- /TMPL_LOOP -->
 <hr>
