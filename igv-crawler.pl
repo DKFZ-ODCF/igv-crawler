@@ -417,19 +417,24 @@ sub getDisplayNameFor ($) {
 
 
 # Determines a publicly visible name for an absolute filepath.
-# It mostly just flattens directory separators to dashes:
-# /my/absolute/results-per-pid-scandir/some_pid/some_analysis/file.txt becomes
-# -my-absolute-results-per-pid-scandir-some_pid-some_analysis-file.txt
+#
+# This subroutine handles all logic of turning a crawled (absolute) file into a new (relative) path fit for public consumption.
+# The path is relative so this subroutine can be used by both the filesystem-handling and the URL-handling parts of the code.
+# either prepend the www-host dir, or the www-host URL, and you're set to go!
 sub getLinkNameFor ($$) {
   my ($pid, $filepath) = @_;
 
-  # avoid turning the links-per-pid subdir into a maze of subdirs
-  # just keep a flat list of links under there.
-  # i.e. some/dir/with/a-file.txt -> some-dir-with-a-file.txt
-  my ($volume, $dir, $filename) = File::Spec->splitpath($filepath);
-  my @path_elems = File::Spec->splitdir($dir);
-  push @path_elems, $filename;
-  return catfile($pid, join("-", @path_elems));
+  # We DON'T want to re-create the entire project folder structure on the server-side.
+  # We DO want to keep the basename of the file, because this is shown in IGV's GUI as track name.
+  # Compromise: 3 subdirs
+  #   1) group everything per patient (for order)
+  #   2) collapse the entire absolute path into one pipe-separated directory name (to avoid clashes between identically-named files)
+  #   3) end with the file's basename (for best representation as IGV track name)
+  my ($ignored_volume, $parent_dirs, $basename) = File::Spec->splitpath($filepath);
+  my @path_elems = grep { $_ ne '' } File::Spec->splitdir($parent_dirs); # splitdir produces leading and trailing ''
+  my $anti_clash_path = join("|", @path_elems);
+
+  return catfile($pid, $anti_clash_path, $basename);
 }
 
 
