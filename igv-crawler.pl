@@ -367,18 +367,19 @@ sub makeAllFileSystemLinks ($%) {
 
   foreach my $patient_id (keys %files_per_patient_id) {
     foreach my $file_to_link (@{ $files_per_patient_id{$patient_id} }) {
-      my $filename = getLinkNameFor($patient_id, $file_to_link);
+      my $link_name = getLinkNameFor($patient_id, $file_to_link);
+      my $public_path = catfile($public_link_dir, $link_name);     # absolute path of $link_name
 
-      my $public_path = catfile($public_link_dir, $filename);
-      if (-l $public_path) { # the link we want to create was already made for another file in this pid; this isn't from a previous run because this parent dir is cleared by clearOldLinksIn() before this
-        my $old_target = readlink $public_path;
-
-        push @log_symlink_clashes, "$old_target -> $file_to_link";
-      }
-
-      # $filename will probably contain sub-directories, create those
+      # The generated $link_name will probably contain new sub-directories, create those
       my ($ignored_volume, $link_dir, $ignored_basename) = File::Spec->splitpath($public_path);  # effectively: `dirname $public_path`
       mkpath($link_dir) unless -d $link_dir;
+
+      # Check if the link we want to create was already made for another file in this pid;
+      # This can't be from a previous run because this parent dir is always cleared by clearOldLinksIn()
+      if (-l $public_path) {
+        my $old_target = readlink $public_path;
+        push @log_symlink_clashes, "$old_target -> $file_to_link";
+      }
 
       symlink $file_to_link, $public_path;
     }
