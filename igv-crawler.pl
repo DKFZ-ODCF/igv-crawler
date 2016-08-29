@@ -754,10 +754,10 @@ __DATA__
     }
 
     /* reduce visual clutter of links, otherwise 90% of the page is underlined */
-    A:link     { text-decoration-line: none }
-    A:visited  { text-decoration-line: none }
-    A:hover    { text-decoration-line: underline }
-    A:active   { text-decoration-line: underline }
+    A:link     { text-decoration: none }
+    A:visited  { text-decoration: none }
+    A:hover    { text-decoration: underline }
+    A:active   { text-decoration: underline }
   --></style>
 
 </head>
