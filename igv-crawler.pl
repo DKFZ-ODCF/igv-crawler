@@ -802,7 +802,7 @@ __DATA__
   font-size: small;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 4px 20px 4px 6px;
+  padding: 4px 28px 4px 6px;
   background-color: white;
   border: 1px solid black;
   border-right: none;
