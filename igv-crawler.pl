@@ -432,7 +432,7 @@ sub getLinkNameFor ($$) {
   #   3) end with the file's basename (for best representation as IGV track name)
   my ($ignored_volume, $parent_dirs, $basename) = File::Spec->splitpath($filepath);
   my @path_elems = grep { $_ ne '' } File::Spec->splitdir($parent_dirs); # splitdir produces leading and trailing ''
-  my $anti_clash_path = join("|", @path_elems);
+  my $anti_clash_path = join("_", @path_elems);
 
   return catfile($pid, $anti_clash_path, $basename);
 }
