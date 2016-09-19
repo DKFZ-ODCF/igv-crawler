@@ -237,27 +237,25 @@ sub main {
         '*.bam',
         '*.bed',
         '*.bedGraph',
-        '*.bigbed',
-        '*.bigWig',
+        '*.bigBed', '*.bb',
+        '*.bigWig', '*.bw',
         '*.birdseye_canary_calls',
-        '*.broadPeak',
+        '*.broadPeak', '*.narrowPeak',
         '*.cbs',
         '*.cn',
         '*.gct',
-        '*.gff',
-        '*.gff3',
+        '*.gff', '*.gff3',
         '*.gtf',
         '*.gistic',
         '*.loh',
         '*.maf',
         '*.mut',
-        '*.narrowPeak',
         '*.psl',
         '*.res',
         '*.seg',
         '*.snp',
-        '*.tdf',
-        '*.tbi',
+        '*.tdf', '*.igv',
+        '*.tbi', '*.idx.gz', '*.idx',
         '*.wig'
       )
       ->not_empty
@@ -494,7 +492,9 @@ sub findDatafilesToDisplay (%) {
     my @bed           = findFilesWithExtension('bed',       @all_files_of_patient);
     my @bedgraph      = findFilesWithExtension('bedGraph',  @all_files_of_patient); 
     my @bigbed        = findFilesWithExtension('bigbed',    @all_files_of_patient);
+    my @bb            = findFilesWithExtension('bb',        @all_files_of_patient);
     my @bigwig        = findFilesWithExtension('bigWig',    @all_files_of_patient);
+    my @bw            = findFilesWithExtension('bw',        @all_files_of_patient);
     my @birdsuite     = findFilesWithExtension('birdseye_canary_calls', @all_files_of_patient); 
     my @broadpeak     = findFilesWithExtension('broadPeak', @all_files_of_patient); 
     my @cbs           = findFilesWithExtension('cbs',       @all_files_of_patient);
@@ -504,6 +504,7 @@ sub findDatafilesToDisplay (%) {
     my @gff3          = findFilesWithExtension('gff3',      @all_files_of_patient);
     my @gtf           = findFilesWithExtension('gtf',       @all_files_of_patient);
     my @gistic        = findFilesWithExtension('gistic',    @all_files_of_patient);
+    my @igv           = findFilesWithExtension('igv',       @all_files_of_patient);
     my @loh           = findFilesWithExtension('loh',       @all_files_of_patient);
     my @maf           = findFilesWithExtension('maf',       @all_files_of_patient);
     my @mut           = findFilesWithExtension('mut',       @all_files_of_patient);
@@ -515,8 +516,8 @@ sub findDatafilesToDisplay (%) {
     my @tdf           = findFilesWithExtension('tdf',       @all_files_of_patient);
     my @wig           = findFilesWithExtension('Wig',       @all_files_of_patient);
 
-    my @combined_result = sort(@bams_having_indices, @bed, @bedgraph, @bigbed, @bigwig, @birdsuite, @broadpeak,
-                           @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @loh, @maf, @mut, @narrowpeak, @psl, @res,
+    my @combined_result = sort(@bams_having_indices, @bed, @bedgraph, @bigbed, @bb, @bigwig, @bw, @birdsuite, @broadpeak,
+                           @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @igv, @loh, @maf, @mut, @narrowpeak, @psl, @res,
                            @seg, @snp, @tdf, @wig);
 
     # update totals-counter
