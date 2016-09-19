@@ -142,14 +142,14 @@ sub parseArgs () {
   die "Didn't specifify pid-format, cannot extract patient ID from file paths, aborting!" if ($pid_regex eq "");
 
   # sanity check: display mode
-  if ($display_mode =~ /^regex=(.*)/) {
+  if ($display_mode =~ /^regex=(.*)$/s) {
     $display_mode = 'regex';
     $display_regex = $1;
     if (index($display_regex, '(') == -1) {   # yes, a crafty user could fool this with (?:), but then you're intentionally messing it up
       die "display-mode regex must contain at least one capture group to display";
     }
     eval {
-      $display_regex = qr/$display_regex/; # precompile regex
+      $display_regex = qr/$display_regex/x; # precompile regex
     } or do {
       die "error encountered while parsing display-mode regex:\n$@";
     };
