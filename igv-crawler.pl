@@ -17,9 +17,8 @@ use File::stat;
 use File::Find::Rule;
 use File::Path;
 use File::Spec::Functions;
-use HTML::Template;
 use Getopt::Long;
-use Data::Dumper;
+use HTML::Template;
 
 
 #####################################################################################
