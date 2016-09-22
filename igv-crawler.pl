@@ -716,7 +716,7 @@ sub printLongReport ($) {
             "deepest directory scanned (from / ):    $log_deepest_scan_depth\n" .
             "deepest file found        (from / ):    $log_deepest_find_depth\n" .
             "shallowest file found     (from / ):    $log_shallowest_find_depth\n" .
-            "ignored files:                          $log_shallowest_find_depth\n" .
+            "ignored files:                          $log_ignored_files\n" .
             "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S", $log_last_modification_time) . "\n";
 
   printWithHeader($fh, "undetectable PIDs",      @log_pid_undetectable_paths);
