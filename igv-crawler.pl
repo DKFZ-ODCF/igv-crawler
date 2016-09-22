@@ -12,6 +12,8 @@ use 5.010;
 # Some more documentation at xWiki:
 # https://ibios.dkfz.de/xwiki/bin/view/Database/Making+%28OTP%29+BamFiles+available+online
 
+use Date::Format;
+use File::stat;
 use File::Find::Rule;
 use File::Path;
 use File::Spec::Functions;
@@ -61,6 +63,7 @@ my $log_deepest_scan_depth =0;
 my $log_shallowest_find_depth =999;
 my $log_deepest_find_depth =0;
 my $log_ignored_files =0;
+my $log_last_modification_time=0; # epoch timestamp of most recently changed file in the index.
 my $log_total_files_displayed =0; # number of files that are displayed
 my $log_total_pids_displayed =0;  # number of distinct patients all the files belong to
 my @log_undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
@@ -307,6 +310,12 @@ sub addToIndex ($) {
     # append the file-path to our list of files-per-patient
     $bambai_file_index{$patient_id} = [] unless defined $bambai_file_index{$patient_id};
     push @{ $bambai_file_index{$patient_id} }, $file;
+
+    # save the modification time of the file
+    my $mtime = stat($file)->mtime;
+    if ($mtime > $log_last_modification_time) {
+      $log_last_modification_time = $mtime;
+    }
   }
 }
 
@@ -691,7 +700,8 @@ sub printShortReport () {
         "undetectable pids:                      " . scalar @log_pid_undetectable_paths . "\n" .
         "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n" .
         "symlink clashes:                        " . scalar @log_symlink_clashes        . "\n" .
-        "unreadable files:                       " . scalar @log_unreadable_paths       . "\n";
+        "unreadable files:                       " . scalar @log_unreadable_paths       . "\n" .
+        "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S%n", $log_last_modification_time) . "\n";
 
   print "unparseable paths:                      " . scalar @log_undisplayable_paths    . "\n" if $display_mode eq 'regex';
 }
@@ -706,7 +716,8 @@ sub printLongReport ($) {
             "deepest directory scanned (from / ):    $log_deepest_scan_depth\n" .
             "deepest file found        (from / ):    $log_deepest_find_depth\n" .
             "shallowest file found     (from / ):    $log_shallowest_find_depth\n" .
-            "ignored files:                          $log_shallowest_find_depth\n";
+            "ignored files:                          $log_shallowest_find_depth\n" .
+            "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S", $log_last_modification_time) . "\n";
 
   printWithHeader($fh, "undetectable PIDs",      @log_pid_undetectable_paths);
   printWithHeader($fh, "files without index",    @log_files_without_indices);
