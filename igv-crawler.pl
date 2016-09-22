@@ -405,8 +405,8 @@ sub getDisplayNameFor ($) {
     return $filename;
 
   } else { # we must have a regex in $display_regex, use it
-    # example path:  /icgc/dkfzlsdf/analysis/hipo/hipo_035/data_types/ChIPseq_v4/results_per_pid/H035-137M/alignment/H035-137M.cell04.H3.sorted.bam
-    # example regex: /icgc/dkfzlsdf/(analysis|project)/hipo/(hipo_035)/data_types/([-_ \w\d]+)/(?:results_per_pid/)*(.+)
+    # example path:  /icgc/dkfzlsdf/analysis/hipo/hipo_000/data_types/ChIPseq_v4/results_per_pid/H000-1ABC/alignment/H000-1ABC.cell04.H3.sorted.bam
+    # example regex: /icgc/dkfzlsdf/(analysis|project)/hipo/(hipo_000)/data_types/([-_ \w\d]+)/(?:results_per_pid/)*(.+)
     my @display_items = ($filepath =~ $display_regex);
 
     # if the display_regex contains unused capture groups (e.g. the 'wrong' branch of alternations), they emit unitialized captures in their result.
