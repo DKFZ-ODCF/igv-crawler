@@ -189,7 +189,7 @@ sub parseArgs () {
 sub main {
   my ($link_dir_path, $link_dir_url, $output_file_path) = parseArgs();
 
-  print "Scanning $project_name for IGV-relevant files in:\n";
+  print "\nScanning $project_name for IGV-relevant files in:\n";
   print "  $_\n" for @scan_dirs;
 
   my $rule = (
@@ -342,7 +342,7 @@ sub derivePatientIdFrom ($) {
 sub clearOldLinksIn ($) {
   my ($dir_to_clear) = @_;
 
-  print "Clearing out links and empty directories in $dir_to_clear\n";
+  print "Clearing out links in $dir_to_clear\n";
 
   # sanity, don't let this work on directories that aren't ours
   # intentionally hardcoding 'links' instead of $link_dir, so it'll break if future people are careless (recursive "find -delete" is NASTY)
@@ -370,7 +370,7 @@ sub clearOldLinksIn ($) {
 sub makeAllFileSystemLinks ($%) {
   my ($public_link_dir, %files_per_patient_id) = @_;
 
-  print "creating links in $public_link_dir\n";
+  print "creating links in     $public_link_dir\n";
 
   foreach my $patient_id (keys %files_per_patient_id) {
     foreach my $file_to_link (@{ $files_per_patient_id{$patient_id} }) {
@@ -661,7 +661,7 @@ sub formatPatientDataForTemplate (%) {
 sub writeContentsToFile ($$) {
   my ($contents, $filename) = @_;
 
-  print "writing contents to $filename\n";
+  print "writing contents to   $filename\n";
   open (FILE, "> $filename") or die "problem opening $filename\n";
   print FILE $contents;
   close (FILE);
@@ -669,7 +669,7 @@ sub writeContentsToFile ($$) {
 
 
 sub printReport () {
-  print "== After-action report for $project_name ==\n";
+  print "\n== After-action report for $project_name ==\n";
 
   # log once to STDOUT, in long or short form depending on CLI input ...
   if ($report_mode eq "counts") {
@@ -724,12 +724,13 @@ sub printLongReport ($) {
   printWithHeader($fh, "symlink name clashes",   @log_symlink_clashes);
 
   printWithHeader($fh, "Unreadable paths",       @log_unreadable_paths);
-  print $fh "=== Recurring unreadable subdirectories ===\n";
-  while ( my ($subdir, $count) = each %log_unreadable_summary ) {
-    # only print aggregate counts for directories occuring more than once
-    print $fh sprintf("  %-25s: % 4d\n", $subdir, $count) if ($count > 1);
-  }
-  print "\n";
+
+  my @parsed_unreadable_summary = map {
+      $log_unreadable_summary{$_} > 1 ?
+         sprintf("%-25s % 4d", ($_ . ':'), $log_unreadable_summary{$_})
+         : ()
+  } keys %log_unreadable_summary;
+  printWithHeader($fh, "Recurring unreadable subdirectories", @parsed_unreadable_summary);
 
   printWithHeader($fh, "Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
 }
@@ -739,9 +740,15 @@ sub printWithHeader ($$@) {
   my ($fh, $header, @list) = @_;
   my $count = scalar @list;
 
-  my $indent = "  ";
-  print $fh "=== $count $header ===";
-  print $fh "\n$indent" . join("\n$indent", sort @list) . "\n";
+  if ($count == 0) {
+    # print shorter form if there's no list
+    print sprintf("%-40s0\n", ($header . ':'));
+  } else {
+    # print full list
+    my $indent = "  ";
+    print $fh "=== $count $header ===";
+    print $fh "\n$indent" . join("\n$indent", sort @list) . "\n";
+  }
 }
 
 
