@@ -719,25 +719,27 @@ sub printLongReport ($) {
             "ignored files:                          $log_ignored_files\n" .
             "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S", $log_last_modification_time) . "\n";
 
-  printWithHeader($fh, "undetectable PIDs",      @log_pid_undetectable_paths);
-  printWithHeader($fh, "files without index",    @log_files_without_indices);
-  printWithHeader($fh, "symlink name clashes",   @log_symlink_clashes);
+  printWithHeader($fh, "undetectable PIDs",      \@log_pid_undetectable_paths);
+  printWithHeader($fh, "files without index",    \@log_files_without_indices);
+  printWithHeader($fh, "symlink name clashes",   \@log_symlink_clashes);
 
-  printWithHeader($fh, "Unreadable paths",       @log_unreadable_paths);
+  printWithHeader($fh, "Unreadable paths",       \@log_unreadable_paths);
 
   my @parsed_unreadable_summary = map {
       $log_unreadable_summary{$_} > 1 ?
          sprintf("%-25s % 4d", ($_ . ':'), $log_unreadable_summary{$_})
          : ()
   } keys %log_unreadable_summary;
-  printWithHeader($fh, "Recurring unreadable subdirectories", @parsed_unreadable_summary);
+  printWithHeader($fh, "Recurring unreadable subdirectories", \@parsed_unreadable_summary);
 
-  printWithHeader($fh, "Unparseable paths",      @log_undisplayable_paths) if $display_mode eq 'regex';
+  printWithHeader($fh, "Unparseable paths",      \@log_undisplayable_paths) if $display_mode eq 'regex';
 }
 
 
-sub printWithHeader ($$@) {
-  my ($fh, $header, @list) = @_;
+sub printWithHeader ($$$) {
+  my ($fh, $header, $reflist) = @_;
+  my @list = @{$reflist};
+
   my $count = scalar @list;
 
   if ($count == 0) {
