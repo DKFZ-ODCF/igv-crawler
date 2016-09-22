@@ -142,6 +142,7 @@ sub parseArgs () {
 
   # sanity check: pid-format
   die "Didn't specifify pid-format, cannot extract patient ID from file paths, aborting!" if ($pid_regex eq "");
+  die "pid-format should contain at least one capture group" if (index($pid_regex, '(') == -1);
 
   # sanity check: display mode
   if ($display_mode =~ /^regex=(.*)$/s) {
