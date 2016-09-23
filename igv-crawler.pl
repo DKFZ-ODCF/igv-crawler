@@ -744,7 +744,7 @@ sub printWithHeader ($$$) {
 
   if ($count == 0) {
     # print shorter form if there's no list
-    print sprintf("%-40s0\n", ($header . ':'));
+    print $fh sprintf("%-40s0\n", ($header . ':'));
   } else {
     # print full list
     my $indent = "  ";
