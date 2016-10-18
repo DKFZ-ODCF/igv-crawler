@@ -326,7 +326,7 @@ sub addToIndex ($) {
 sub derivePatientIdFrom ($) {
   my ($filepath) = @_;
 
-  if ($filepath =~ /$pid_regex/) {
+  if ($filepath =~ /$pid_regex/x) {
     my $patient_id = $1;
     return $patient_id;
   } else {
