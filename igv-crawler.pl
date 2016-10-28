@@ -532,8 +532,12 @@ sub findDatafilesToDisplay (%) {
     # update totals-counter
     $log_total_files_displayed += (scalar @combined_result);
 
-    # store result
-    @{ $filtered{ $patient_id } } = @combined_result;
+    # store result, if we have any visible files remaining
+    # This means we don't show patients who have no data files.
+    # (though they may still have orphaned index files)
+    if (scalar(@combined_result) > 0) {
+      @{ $filtered{ $patient_id } } = @combined_result;
+    }
   }
 
   # update other totals-counter
