@@ -497,33 +497,35 @@ sub findDatafilesToDisplay (%) {
     # meaningful temp names
     my @all_files_of_patient = sort @{ $original{ $patient_id }};
 
-    my @bams_having_indices = findBamfilesToDisplay(@all_files_of_patient);
-    my @bed           = findFilesWithExtension('bed',       @all_files_of_patient);
-    my @bedgraph      = findFilesWithExtension('bedGraph',  @all_files_of_patient); 
-    my @bigbed        = findFilesWithExtension('bigbed',    @all_files_of_patient);
-    my @bb            = findFilesWithExtension('bb',        @all_files_of_patient);
-    my @bigwig        = findFilesWithExtension('bigWig',    @all_files_of_patient);
-    my @bw            = findFilesWithExtension('bw',        @all_files_of_patient);
-    my @birdsuite     = findFilesWithExtension('birdseye_canary_calls', @all_files_of_patient); 
-    my @broadpeak     = findFilesWithExtension('broadPeak', @all_files_of_patient); 
-    my @cbs           = findFilesWithExtension('cbs',       @all_files_of_patient);
-    my @cn            = findFilesWithExtension('cn',        @all_files_of_patient);
-    my @gct           = findFilesWithExtension('gct',       @all_files_of_patient);
-    my @gff           = findFilesWithExtension('gff',       @all_files_of_patient);
-    my @gff3          = findFilesWithExtension('gff3',      @all_files_of_patient);
-    my @gtf           = findFilesWithExtension('gtf',       @all_files_of_patient);
-    my @gistic        = findFilesWithExtension('gistic',    @all_files_of_patient);
-    my @igv           = findFilesWithExtension('igv',       @all_files_of_patient);
-    my @loh           = findFilesWithExtension('loh',       @all_files_of_patient);
-    my @maf           = findFilesWithExtension('maf',       @all_files_of_patient);
-    my @mut           = findFilesWithExtension('mut',       @all_files_of_patient);
-    my @narrowpeak    = findFilesWithExtension('narrowPeak',@all_files_of_patient); 
-    my @psl           = findFilesWithExtension('psl',       @all_files_of_patient);
-    my @res           = findFilesWithExtension('res',       @all_files_of_patient);
-    my @seg           = findFilesWithExtension('seg',       @all_files_of_patient);
-    my @snp           = findFilesWithExtension('snp',       @all_files_of_patient);
-    my @tdf           = findFilesWithExtension('tdf',       @all_files_of_patient);
-    my @wig           = findFilesWithExtension('Wig',       @all_files_of_patient);
+#TODO: rewrite this to also work with .gz extensions
+#TODO: invert this: filter out the index-files from the total instead of everything-but-the-indices; will be shorter and less grepping
+    my @bams_having_indices = findBamfilesToDisplay(\@all_files_of_patient);
+    my @bed           = findFilesWithExtension('bed',       \@all_files_of_patient);
+    my @bedgraph      = findFilesWithExtension('bedGraph',  \@all_files_of_patient);
+    my @bigbed        = findFilesWithExtension('bigbed',    \@all_files_of_patient);
+    my @bb            = findFilesWithExtension('bb',        \@all_files_of_patient);
+    my @bigwig        = findFilesWithExtension('bigWig',    \@all_files_of_patient);
+    my @bw            = findFilesWithExtension('bw',        \@all_files_of_patient);
+    my @birdsuite     = findFilesWithExtension('birdseye_canary_calls', \@all_files_of_patient);
+    my @broadpeak     = findFilesWithExtension('broadPeak', \@all_files_of_patient);
+    my @cbs           = findFilesWithExtension('cbs',       \@all_files_of_patient);
+    my @cn            = findFilesWithExtension('cn',        \@all_files_of_patient);
+    my @gct           = findFilesWithExtension('gct',       \@all_files_of_patient);
+    my @gff           = findFilesWithExtension('gff',       \@all_files_of_patient);
+    my @gff3          = findFilesWithExtension('gff3',      \@all_files_of_patient);
+    my @gtf           = findFilesWithExtension('gtf',       \@all_files_of_patient);
+    my @gistic        = findFilesWithExtension('gistic',    \@all_files_of_patient);
+    my @igv           = findFilesWithExtension('igv',       \@all_files_of_patient);
+    my @loh           = findFilesWithExtension('loh',       \@all_files_of_patient);
+    my @maf           = findFilesWithExtension('maf',       \@all_files_of_patient);
+    my @mut           = findFilesWithExtension('mut',       \@all_files_of_patient);
+    my @narrowpeak    = findFilesWithExtension('narrowPeak',\@all_files_of_patient);
+    my @psl           = findFilesWithExtension('psl',       \@all_files_of_patient);
+    my @res           = findFilesWithExtension('res',       \@all_files_of_patient);
+    my @seg           = findFilesWithExtension('seg',       \@all_files_of_patient);
+    my @snp           = findFilesWithExtension('snp',       \@all_files_of_patient);
+    my @tdf           = findFilesWithExtension('tdf',       \@all_files_of_patient);
+    my @wig           = findFilesWithExtension('Wig',       \@all_files_of_patient);
 
     my @combined_result = sort(@bams_having_indices, @bed, @bedgraph, @bigbed, @bb, @bigwig, @bw, @birdsuite, @broadpeak,
                            @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @igv, @loh, @maf, @mut, @narrowpeak, @psl, @res,
@@ -548,13 +550,14 @@ sub findDatafilesToDisplay (%) {
 
 
 # filters a patient's files for bams having .bai or .bam.bai files
-sub findBamfilesToDisplay (@) {
-    my @all_files_of_patient = @_;
+sub findBamfilesToDisplay ($) {
+    my ($all_files_of_patient_ref) = @_;
+    my @all_files_of_patient = @$all_files_of_patient_ref;
     my @unfiltered_bams = grep { $_ =~ /\.bam$/  } @all_files_of_patient;
 
     # actual filtering steps
-    my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     @all_files_of_patient);
-    my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', @all_files_of_patient);
+    my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     \@all_files_of_patient);
+    my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', \@all_files_of_patient);
 
     # merge results, removing duplicates (some .bams provide both .bai + .bam.bai, and so occur in both bams_having_X lists)
     my %unique_merged_bams_having_indices = map { $_, 1 } (@bams_having_bais, @bams_having_bambais);
@@ -570,8 +573,9 @@ sub findBamfilesToDisplay (@) {
 
 # finds files ending in .<parameter>$ among a patient's files
 # extension is match as case-insensitive regex.
-sub findFilesWithExtension ($@) {
-  my ($extension, @all_files_of_patient) = @_;
+sub findFilesWithExtension ($$) {
+  my ($extension, $all_files_of_patient_ref) = @_;
+  my @all_files_of_patient = @$all_files_of_patient_ref;
 
   my $extension_pattern = '.' . quotemeta($extension) . '$';
   
@@ -584,16 +588,17 @@ sub findFilesWithExtension ($@) {
 # i.e. given a list of found datafiles+indexfiles
 # returns the list of datafiles that have an indexfile in the input
 # effectively removing both indexless-datafiles AND the indexfiles from the input
-sub findFilesWithIndices ($$@) {
-  my ($data_extension, $index_extension, @all_files) = @_;
+sub findFilesWithIndices ($$$) {
+  my ($data_extension, $index_extension, $all_files_of_patient_ref) = @_;
+  my @all_files_of_patient = @$all_files_of_patient_ref;
   #       .bam       , .bam.bai || .bai,   [....]
 
   my $data_pattern  = quotemeta($data_extension)  . '$';
   my $index_pattern = quotemeta($index_extension) . '$';
 
   # first, divide our datafiles and indexfiles into separate buckets
-  my @found_data    = grep { $_ =~ /$data_pattern/  } @all_files;
-  my @found_indices = grep { $_ =~ /$index_pattern/ } @all_files;
+  my @found_data    = grep { $_ =~ /$data_pattern/  } @all_files_of_patient;
+  my @found_indices = grep { $_ =~ /$index_pattern/ } @all_files_of_patient;
 
   # second, map each datafile to its _expected_ indexfile
   my %expected_indices = map {
