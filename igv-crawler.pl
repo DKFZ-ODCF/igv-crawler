@@ -435,11 +435,12 @@ sub getLinkNameFor ($$) {
   # We DO want to keep the basename of the file, because this is shown in IGV's GUI as track name.
   # Compromise: 3 subdirs
   #   1) group everything per patient (for order)
-  #   2) collapse the entire absolute path into one pipe-separated directory name (to avoid clashes between identically-named files)
-  #   3) end with the file's basename (for best representation as IGV track name)
+  #   2) condense the entire parent structure into one subdir level (to avoid clashes between identically-named files in different subdirs)
+  #         NB: this 'leaks' information on our directory structure.
+  #   3) keep the file's basename (for best representation as IGV track name)
   my ($ignored_volume, $parent_dirs, $basename) = File::Spec->splitpath($filepath);
   my @path_elems = grep { $_ ne '' } File::Spec->splitdir($parent_dirs); # splitdir produces leading and trailing ''
-  my $anti_clash_path = join("_", @path_elems);
+  my $anti_clash_path = join(".", @path_elems);
 
   return catfile($pid, $anti_clash_path, $basename);
 }
