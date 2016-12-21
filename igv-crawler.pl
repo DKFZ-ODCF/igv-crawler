@@ -578,7 +578,7 @@ sub findFilesWithExtension ($$) {
   my ($extension, $all_files_of_patient_ref) = @_;
   my @all_files_of_patient = @$all_files_of_patient_ref;
 
-  my $extension_pattern = '.' . quotemeta($extension) . '$';
+  my $extension_pattern = '\.' . quotemeta($extension) . '$';
   
   return grep { $_ =~ /$extension_pattern/i } @all_files_of_patient;
 }
