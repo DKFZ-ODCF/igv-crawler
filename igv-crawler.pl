@@ -236,16 +236,18 @@ sub main {
       )
 
       # include files with IGV extensions (if they're not empty placeholders)
+#TODO: also index all .gz counterparts
       ->file
       ->name(
         '*.bai',
         '*.bam',
         '*.bed',
-        '*.bedGraph',
-        '*.bigBed', '*.bb',
-        '*.bigWig', '*.bw',
+        '*.bedGraph', '*.bedgraph',
+        '*.bigBed', '*.bigbed', '*.bb',
+        '*.bigWig', '*.bigwig', '*.bw',
         '*.birdseye_canary_calls',
-        '*.broadPeak', '*.narrowPeak',
+        '*.broadPeak', '*.broadpeak',
+        '*.narrowPeak', '*.narrowpeak',
         '*.cbs',
         '*.cn',
         '*.gct',
