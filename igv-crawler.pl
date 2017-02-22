@@ -254,6 +254,7 @@ sub main {
         '*.gff', '*.gff3',
         '*.gtf',
         '*.gistic',
+        '*.igv.txt', # Annotation files
         '*.loh',
         '*.maf',
         '*.mut',
@@ -262,7 +263,7 @@ sub main {
         '*.seg',
         '*.snp',
         '*.tdf', '*.igv',
-        '*.tbi', '*.idx.gz', '*.idx',
+        '*.tbi', '*.idx.gz', '*.idx', # indexes
         '*.wig'
       )
       ->not_empty
@@ -521,6 +522,7 @@ sub findDatafilesToDisplay (%) {
     my @gtf           = findFilesWithExtension('gtf',       \@all_files_of_patient);
     my @gistic        = findFilesWithExtension('gistic',    \@all_files_of_patient);
     my @igv           = findFilesWithExtension('igv',       \@all_files_of_patient);
+    my @igvtxt        = findFilesWithExtension('igv.txt',   \@all_files_of_patient);
     my @loh           = findFilesWithExtension('loh',       \@all_files_of_patient);
     my @maf           = findFilesWithExtension('maf',       \@all_files_of_patient);
     my @mut           = findFilesWithExtension('mut',       \@all_files_of_patient);
@@ -533,7 +535,7 @@ sub findDatafilesToDisplay (%) {
     my @wig           = findFilesWithExtension('Wig',       \@all_files_of_patient);
 
     my @combined_result = sort(@bams_having_indices, @bed, @bedgraph, @bigbed, @bb, @bigwig, @bw, @birdsuite, @broadpeak,
-                           @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @igv, @loh, @maf, @mut, @narrowpeak, @psl, @res,
+                           @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @igv, @igvtxt, @loh, @maf, @mut, @narrowpeak, @psl, @res,
                            @seg, @snp, @tdf, @wig);
 
     # update totals-counter
