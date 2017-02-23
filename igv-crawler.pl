@@ -241,6 +241,7 @@ sub main {
       ->name(
         '*.bai',
         '*.bam',
+        '*.attr.txt', # Annotation files
         '*.bed',
         '*.bedGraph', '*.bedgraph',
         '*.bigBed', '*.bigbed', '*.bb',
@@ -254,7 +255,6 @@ sub main {
         '*.gff', '*.gff3',
         '*.gtf',
         '*.gistic',
-        '*.igv.txt', # Annotation files
         '*.loh',
         '*.maf',
         '*.mut',
@@ -506,6 +506,7 @@ sub findDatafilesToDisplay (%) {
 #TODO: rewrite this to also work with .gz extensions
 #TODO: invert this: filter out the index-files from the total instead of everything-but-the-indices; will be shorter and less grepping
     my @bams_having_indices = findBamfilesToDisplay(\@all_files_of_patient);
+    my @attrtxt       = findFilesWithExtension('attr.txt',  \@all_files_of_patient);
     my @bed           = findFilesWithExtension('bed',       \@all_files_of_patient);
     my @bedgraph      = findFilesWithExtension('bedGraph',  \@all_files_of_patient);
     my @bigbed        = findFilesWithExtension('bigbed',    \@all_files_of_patient);
@@ -522,7 +523,6 @@ sub findDatafilesToDisplay (%) {
     my @gtf           = findFilesWithExtension('gtf',       \@all_files_of_patient);
     my @gistic        = findFilesWithExtension('gistic',    \@all_files_of_patient);
     my @igv           = findFilesWithExtension('igv',       \@all_files_of_patient);
-    my @igvtxt        = findFilesWithExtension('igv.txt',   \@all_files_of_patient);
     my @loh           = findFilesWithExtension('loh',       \@all_files_of_patient);
     my @maf           = findFilesWithExtension('maf',       \@all_files_of_patient);
     my @mut           = findFilesWithExtension('mut',       \@all_files_of_patient);
@@ -534,8 +534,8 @@ sub findDatafilesToDisplay (%) {
     my @tdf           = findFilesWithExtension('tdf',       \@all_files_of_patient);
     my @wig           = findFilesWithExtension('Wig',       \@all_files_of_patient);
 
-    my @combined_result = sort(@bams_having_indices, @bed, @bedgraph, @bigbed, @bb, @bigwig, @bw, @birdsuite, @broadpeak,
-                           @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @igv, @igvtxt, @loh, @maf, @mut, @narrowpeak, @psl, @res,
+    my @combined_result = sort(@bams_having_indices, @attrtxt, @bed, @bedgraph, @bigbed, @bb, @bigwig, @bw, @birdsuite, @broadpeak,
+                           @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @igv, @loh, @maf, @mut, @narrowpeak, @psl, @res,
                            @seg, @snp, @tdf, @wig);
 
     # update totals-counter
