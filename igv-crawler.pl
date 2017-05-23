@@ -471,7 +471,7 @@ sub makeHtmlPage ($$$%) {
 
   # remove clutter: filter out the index files so they won't be explicitly listed in the HTML
   # IGV will figure out the index-links itself from the corresponding non-index filename
-  my %nonIndexFiles = findDatafilesToDisplay(%bambai_file_index);
+  my %nonIndexFiles = findDatafilesToDisplay(%files_per_patient_id);
 
   my $formatted_patients = formatPatientDataForTemplate(%nonIndexFiles);
   my $formatted_scandirs = [ map { {dir => $_} } @scan_dirs ];
