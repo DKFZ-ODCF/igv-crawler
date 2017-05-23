@@ -820,7 +820,7 @@ __DATA__
 <p id="igv-instructions">
   <strong>NOTE! the links below only work if</strong>
   <ol>
-    <li>IGV is already running</li>
+    <li>IGV is already running on your LOCAL computer</li>
     <li>you enabled port-control (in view > preferences > advanced > enable port > port 60151)</li>
     <li>you have the correct reference genome loaded before clicking the link.<br/>
       (do this before loading files, or all positions will show up as mutated)<br/>
