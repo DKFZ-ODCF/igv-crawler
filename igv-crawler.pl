@@ -224,6 +224,7 @@ sub main {
             File::Find::Rule->name( 'roddyExecutionStore' ), # skip roddy working directories
             File::Find::Rule->name( @prune_dirs )            # skip user-defined directories
           )
+          # TODO: log count of skipped dirs
           ->prune
           ->discard
         ,
