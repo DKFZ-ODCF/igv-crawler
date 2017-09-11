@@ -130,7 +130,7 @@ sub parseArgs () {
               'scandir=s'   => \@scan_dirs,      # where to look for IGV-relevant files
               'prunedir=s'  => \@prune_dirs,     # names/globs of sub-directories to skip and not descend into.
               'skipfile=s'  => \@prune_files,    # names/globs of files to skip.
-              'pidformat=s' => \$pid_regex,      # the regex used to extract the patient_id from a file path.
+              'groupregex=s'=> \$pid_regex,      # the regex used to group different filepaths together under a single heading in the result page.
               'display=s'   => \$display_mode,   # either the keyword "nameonly" or "fullpath", or a "regex=YOUR_REGEX" whose capture-groups will be listed.
               'report=s'    => \$report_mode,    # what to report at end-of-execution: "counts" or "full"
               'followlinks' => \$follow_symlinks # flag, follow symlinks or not?
