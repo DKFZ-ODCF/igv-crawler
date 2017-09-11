@@ -48,7 +48,7 @@ my $project_name = 'demo';        # defaults to demo-settings, to not-break prod
 my @scan_dirs;                    # list of directories that will be scanned
 my @prune_dirs;                   # list of sub-directories inside @scan_dirs that will not be descended into. Can be shell globs, but not over directories. i.e. '*foo' works, 'foo/subsegment*' doesn't
 my @prune_files;                  # list of globs of filenames to ignore
-my $pid_regex;                    # every file-path is run through this regex to extract the PID (pid-pattern MUST be first capture group)
+my $grouping_regex;               # every file-path is run through this regex to group it with related paths (pattern to group by MUST be first capture group)
 my $display_mode = "nameonly";    # what to show in the HTML-file; defaults to historical behaviour: show filename without parent dir-path
 my $display_regex;                # parsed version of $display_mode, in case it is a regex
 my $report_mode = "counts";       # what to report? "full" > print complete lists of paths, "counts" > only print number of files/paths
@@ -64,10 +64,10 @@ my $log_deepest_find_depth =0;
 my $log_ignored_files =0;
 my $log_last_modification_time=0; # epoch timestamp of most recently changed file in the index.
 my $log_total_files_displayed =0; # number of files that are displayed
-my $log_total_pids_displayed =0;  # number of distinct patients all the files belong to
+my $log_total_groups_displayed =0;# number of distinct groups all the files belong to
 my @log_undisplayable_paths;      # paths that didn't match the displaymode=regex parsing; what should we improve in the display-regex?
-my @log_symlink_clashes;          # Currently filenames must be unique per pid, because the symlink uses only the basename; log if this causes problems (fix to come?)
-my @log_pid_undetectable_paths;   # paths that we couldn't derive a pid from
+my @log_symlink_clashes;          # log if we encounter files that map to the same path, so that we are aware we are overriden/ignoring a result
+my @log_ungroupable_paths;        # paths that we couldn't group, because the grouping regex didn't apply
 my @log_files_without_indices;    # files we had to filter out due to missing indices
 my @log_unreadable_paths;         # paths that File::find couldn't enter due to permission problems
 my %log_unreadable_summary;       # Hash that has the final subdir of all unreadable paths, and their occurance count. Allows identification of recurring permission problems, e.g. tool-generated "screenshots/"
@@ -76,8 +76,8 @@ my %log_unreadable_summary;       # Hash that has the final subdir of all unread
 # THE var: global list to keep track of all the bam+bai files we have found
 # format:
 # {
-#   'patientId1' => [ '/some/file/path.bam', 'some/file/path.bai', ...],
-#   'patientId2' => [ '/other/file/path.bam', 'some/other/path.bai', ...],
+#   'groupId1' => [ '/some/file/path.bam', 'some/file/path.bai', ...],
+#   'groupId2' => [ '/other/file/path.bam', 'some/other/path.bai', ...],
 # }
 my %bambai_file_index = ();
 
@@ -130,7 +130,7 @@ sub parseArgs () {
               'scandir=s'   => \@scan_dirs,      # where to look for IGV-relevant files
               'prunedir=s'  => \@prune_dirs,     # names/globs of sub-directories to skip and not descend into.
               'skipfile=s'  => \@prune_files,    # names/globs of files to skip.
-              'groupregex=s'=> \$pid_regex,      # the regex used to group different filepaths together under a single heading in the result page.
+              'groupregex=s'=> \$grouping_regex, # the regex used to group different filepaths together under a single heading in the result page.
               'display=s'   => \$display_mode,   # either the keyword "nameonly" or "fullpath", or a "regex=YOUR_REGEX" whose capture-groups will be listed.
               'report=s'    => \$report_mode,    # what to report at end-of-execution: "counts" or "full"
               'followlinks' => \$follow_symlinks # flag, follow symlinks or not?
@@ -140,11 +140,11 @@ sub parseArgs () {
   # sanity check: project name?
   die 'No project name specified, aborting!' if ($project_name eq '');
 
-  # sanity check: pid-format
-  die "Didn't specifify pid-format, cannot extract patient ID from file paths, aborting!" if ($pid_regex eq "");
-  die "pid-format should contain at least one capture group" if (index($pid_regex, '(') == -1);
+  # sanity check: grouping regex
+  die "Didn't specifify groupregex, cannot extract grouping label from file paths, aborting!" if ($grouping_regex eq "");
+  die "groupregex should contain at least one capture group" if (index($grouping_regex, '(') == -1);
   # fail-fast: see if it compiles (otherwise it will only fail after we've crawled the disk -> time wasting)
-  "" =~ /$pid_regex/x;
+  "" =~ /$grouping_regex/x;
 
   # sanity check: display mode
   if ($display_mode =~ /^regex=(.*)$/s) {
@@ -314,16 +314,16 @@ sub main {
 
 
 # Registers the provided filename in the global var %bambai_file_index
-# under the appropriate PID derived from the filepath.
+# under the appropriate group derived from the filepath.
 sub addToIndex ($) {
   my ($file) = @_;
 
-  # extract the patient ID from the identifier
-  my $patient_id = derivePatientIdFrom($file);
-  if ($patient_id ne 'ERROR-NO-MATCH') {
-    # append the file-path to our list of files-per-patient
-    $bambai_file_index{$patient_id} = [] unless defined $bambai_file_index{$patient_id};
-    push @{ $bambai_file_index{$patient_id} }, $file;
+  # extract the group label from the identifier
+  my $group_id = deriveGroupIdFrom($file);
+  if ($group_id ne 'ERROR-NO-MATCH') {
+    # append the file-path to our list of files-per-group
+    $bambai_file_index{$group_id} = [] unless defined $bambai_file_index{$group_id};
+    push @{ $bambai_file_index{$group_id} }, $file;
 
     # Check for data "hotness": when was our dataset of interest last changed?
     #  (i.e. how regularly should I re-run this script?)
@@ -335,18 +335,18 @@ sub addToIndex ($) {
 }
 
 
-# Function to derive a patientID from a filepath
+# Function to derive a group label from a filepath
 #
-# requires global var $pid_regex, a regex whose first capture-group becomes the returned pid.
+# requires global var $grouping_regex, a regex whose first capture-group becomes the returned grouping label.
 # If no match is found, returns 'ERROR-NO-MATCH' to signal failure.
-sub derivePatientIdFrom ($) {
+sub deriveGroupIdFrom ($) {
   my ($filepath) = @_;
 
-  if ($filepath =~ /$pid_regex/x) {
-    my $patient_id = $1;
-    return $patient_id;
+  if ($filepath =~ /$grouping_regex/x) {
+    my $group_id = $1;
+    return $group_id;
   } else {
-    push @log_pid_undetectable_paths, $filepath;
+    push @log_ungroupable_paths, $filepath;
     return 'ERROR-NO-MATCH';
   }
 }
@@ -374,31 +374,35 @@ sub clearOldLinksIn ($) {
 
 
 # Populates the publicly-visible public_link_dir with links into the 'private' filesystem.
-# One subfolder per PID containing all links for that patient:
+# One subfolder per group, containing all links associated with that group:
 #
 # public_link_dir/
-#   pid_a/
-#     some-link-1
-#     some-link-2
-#   pid_b/
-#     some-link-3
-#     some-link-4
+#   group_a/
+#     some-link-1 -> actual_datafile_1
+#     some-link-2 -> actual_datafile_2
+#   group_b/
+#     some-link-3 -> actual_datafile_3
+#     some-link-4 -> actual_datafile_4
 #
+# SECURITY CONSIDERATION: Working with links into the actual data folders allows us
+# to NOT expose the entire big storage in the server's document root, limiting 
+# the impact of any data breaches. Instead of the entire storage, they see only the
+# IGV-relevant files.
 sub makeAllFileSystemLinks ($%) {
-  my ($public_link_dir, %files_per_patient_id) = @_;
+  my ($public_link_dir, %files_per_group_id) = @_;
 
   print "creating links in     $public_link_dir\n";
 
-  foreach my $patient_id (keys %files_per_patient_id) {
-    foreach my $file_to_link (@{ $files_per_patient_id{$patient_id} }) {
-      my $link_name = getLinkNameFor($patient_id, $file_to_link);
+  foreach my $group_id (keys %files_per_group_id) {
+    foreach my $file_to_link (@{ $files_per_group_id{$group_id} }) {
+      my $link_name = getLinkNameFor($group_id, $file_to_link);
       my $public_path = catfile($public_link_dir, $link_name);     # absolute path of $link_name
 
       # The generated $link_name will probably contain new sub-directories, create those
       my ($ignored_volume, $link_dir, $ignored_basename) = File::Spec->splitpath($public_path);  # effectively: `dirname $public_path`
       mkpath($link_dir) unless -d $link_dir;
 
-      # Check if the link we want to create was already made for another file in this pid;
+      # Check if the link we want to create was already made for another file in this group;
       # This can't be from a previous run because this parent dir is always cleared by clearOldLinksIn()
       if (-l $public_path) {
         my $old_target = readlink $public_path;
@@ -444,12 +448,12 @@ sub getDisplayNameFor ($) {
 # The path is relative so this subroutine can be used by both the filesystem-handling and the URL-handling parts of the code.
 # either prepend the www-host dir, or the www-host URL, and you're set to go!
 sub getLinkNameFor ($$) {
-  my ($pid, $filepath) = @_;
+  my ($group, $filepath) = @_;
 
   # We DON'T want to re-create the entire project folder structure on the server-side.
   # We DO want to keep the basename of the file, because this is shown in IGV's GUI as track name.
   # Compromise: 3 subdirs
-  #   1) group everything per patient (for order)
+  #   1) group everything per group (for order)
   #   2) condense the entire parent structure into one subdir level (to avoid clashes between identically-named files in different subdirs)
   #         NB: this 'leaks' information on our directory structure.
   #   3) keep the file's basename (for best representation as IGV track name)
@@ -457,26 +461,26 @@ sub getLinkNameFor ($$) {
   my @path_elems = grep { $_ ne '' } File::Spec->splitdir($parent_dirs); # splitdir produces leading and trailing ''
   my $anti_clash_path = join(".", @path_elems);
 
-  return catfile($pid, $anti_clash_path, $basename);
+  return catfile($group, $anti_clash_path, $basename);
 }
 
 
 # Formats and pours the provided data into a nice little template. Writes the result to disk.
 sub makeHtmlPage ($$$%) {
-  my ($output_file, $file_host_dir, $project_name, %files_per_patient_id) = @_;
+  my ($output_file, $file_host_dir, $project_name, %files_per_group_id) = @_;
 
   # Get the HTML template from this file's DATA section
   my $html = do { local $/; <DATA> };
   my $template = HTML::Template->new(
     scalarref         => \$html,
-    global_vars       => 1 # needed to make outer-var file_host_dir visible inside per-patient loops for links
+    global_vars       => 1 # needed to make outer-var file_host_dir visible inside per-group loops for links
   );
 
   # remove clutter: filter out the index files so they won't be explicitly listed in the HTML
   # IGV will figure out the index-links itself from the corresponding non-index filename
-  my %nonIndexFiles = findDatafilesToDisplay(%files_per_patient_id);
+  my %nonIndexFiles = findDatafilesToDisplay(%files_per_group_id);
 
-  my $formatted_patients = formatPatientDataForTemplate(%nonIndexFiles);
+  my $formatted_groups = formatGroupDataForTemplate(%nonIndexFiles);
   my $formatted_scandirs = [ map { {dir => $_} } @scan_dirs ];
   # for some reason, writing 'localtime' directly in the param()-map didn't work, so we need a temp-var
   my $timestamp = localtime;
@@ -486,7 +490,7 @@ sub makeHtmlPage ($$$%) {
     project_name  => $project_name,
     timestamp     => $timestamp,
     file_host_dir => $file_host_dir,
-    patients      => $formatted_patients,
+    groups        => $formatted_groups,
     scandirs      => $formatted_scandirs
   );
 
@@ -509,40 +513,40 @@ sub findDatafilesToDisplay (%) {
 
   my %filtered = ();
 
-  foreach my $patient_id (keys %original) {
+  foreach my $group_id (keys %original) {
     # meaningful temp names
-    my @all_files_of_patient = sort @{ $original{ $patient_id }};
+    my @all_files_of_group = sort @{ $original{ $group_id }};
 
 #TODO: rewrite this to also work with .gz extensions
 #TODO: invert this: filter out the index-files from the total instead of everything-but-the-indices; will be shorter and less grepping
-    my @bams_having_indices = findBamfilesToDisplay(\@all_files_of_patient);
-    my @attrtxt       = findFilesWithExtension('attr.txt',  \@all_files_of_patient);
-    my @bed           = findFilesWithExtension('bed',       \@all_files_of_patient);
-    my @bedgraph      = findFilesWithExtension('bedGraph',  \@all_files_of_patient);
-    my @bigbed        = findFilesWithExtension('bigbed',    \@all_files_of_patient);
-    my @bb            = findFilesWithExtension('bb',        \@all_files_of_patient);
-    my @bigwig        = findFilesWithExtension('bigWig',    \@all_files_of_patient);
-    my @bw            = findFilesWithExtension('bw',        \@all_files_of_patient);
-    my @birdsuite     = findFilesWithExtension('birdseye_canary_calls', \@all_files_of_patient);
-    my @broadpeak     = findFilesWithExtension('broadPeak', \@all_files_of_patient);
-    my @cbs           = findFilesWithExtension('cbs',       \@all_files_of_patient);
-    my @cn            = findFilesWithExtension('cn',        \@all_files_of_patient);
-    my @gct           = findFilesWithExtension('gct',       \@all_files_of_patient);
-    my @gff           = findFilesWithExtension('gff',       \@all_files_of_patient);
-    my @gff3          = findFilesWithExtension('gff3',      \@all_files_of_patient);
-    my @gtf           = findFilesWithExtension('gtf',       \@all_files_of_patient);
-    my @gistic        = findFilesWithExtension('gistic',    \@all_files_of_patient);
-    my @igv           = findFilesWithExtension('igv',       \@all_files_of_patient);
-    my @loh           = findFilesWithExtension('loh',       \@all_files_of_patient);
-    my @maf           = findFilesWithExtension('maf',       \@all_files_of_patient);
-    my @mut           = findFilesWithExtension('mut',       \@all_files_of_patient);
-    my @narrowpeak    = findFilesWithExtension('narrowPeak',\@all_files_of_patient);
-    my @psl           = findFilesWithExtension('psl',       \@all_files_of_patient);
-    my @res           = findFilesWithExtension('res',       \@all_files_of_patient);
-    my @seg           = findFilesWithExtension('seg',       \@all_files_of_patient);
-    my @snp           = findFilesWithExtension('snp',       \@all_files_of_patient);
-    my @tdf           = findFilesWithExtension('tdf',       \@all_files_of_patient);
-    my @wig           = findFilesWithExtension('Wig',       \@all_files_of_patient);
+    my @bams_having_indices = findBamfilesToDisplay(\@all_files_of_group);
+    my @attrtxt       = findFilesWithExtension('attr.txt',  \@all_files_of_group);
+    my @bed           = findFilesWithExtension('bed',       \@all_files_of_group);
+    my @bedgraph      = findFilesWithExtension('bedGraph',  \@all_files_of_group);
+    my @bigbed        = findFilesWithExtension('bigbed',    \@all_files_of_group);
+    my @bb            = findFilesWithExtension('bb',        \@all_files_of_group);
+    my @bigwig        = findFilesWithExtension('bigWig',    \@all_files_of_group);
+    my @bw            = findFilesWithExtension('bw',        \@all_files_of_group);
+    my @birdsuite     = findFilesWithExtension('birdseye_canary_calls', \@all_files_of_group);
+    my @broadpeak     = findFilesWithExtension('broadPeak', \@all_files_of_group);
+    my @cbs           = findFilesWithExtension('cbs',       \@all_files_of_group);
+    my @cn            = findFilesWithExtension('cn',        \@all_files_of_group);
+    my @gct           = findFilesWithExtension('gct',       \@all_files_of_group);
+    my @gff           = findFilesWithExtension('gff',       \@all_files_of_group);
+    my @gff3          = findFilesWithExtension('gff3',      \@all_files_of_group);
+    my @gtf           = findFilesWithExtension('gtf',       \@all_files_of_group);
+    my @gistic        = findFilesWithExtension('gistic',    \@all_files_of_group);
+    my @igv           = findFilesWithExtension('igv',       \@all_files_of_group);
+    my @loh           = findFilesWithExtension('loh',       \@all_files_of_group);
+    my @maf           = findFilesWithExtension('maf',       \@all_files_of_group);
+    my @mut           = findFilesWithExtension('mut',       \@all_files_of_group);
+    my @narrowpeak    = findFilesWithExtension('narrowPeak',\@all_files_of_group);
+    my @psl           = findFilesWithExtension('psl',       \@all_files_of_group);
+    my @res           = findFilesWithExtension('res',       \@all_files_of_group);
+    my @seg           = findFilesWithExtension('seg',       \@all_files_of_group);
+    my @snp           = findFilesWithExtension('snp',       \@all_files_of_group);
+    my @tdf           = findFilesWithExtension('tdf',       \@all_files_of_group);
+    my @wig           = findFilesWithExtension('Wig',       \@all_files_of_group);
 
     my @combined_result = sort(@bams_having_indices, @attrtxt, @bed, @bedgraph, @bigbed, @bb, @bigwig, @bw, @birdsuite, @broadpeak,
                            @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @igv, @loh, @maf, @mut, @narrowpeak, @psl, @res,
@@ -552,29 +556,29 @@ sub findDatafilesToDisplay (%) {
     $log_total_files_displayed += (scalar @combined_result);
 
     # store result, if we have any visible files remaining
-    # This means we don't show patients who have no data files.
+    # This means we don't show groups who have no data files.
     # (though they may still have orphaned index files)
     if (scalar(@combined_result) > 0) {
-      @{ $filtered{ $patient_id } } = @combined_result;
+      @{ $filtered{ $group_id } } = @combined_result;
     }
   }
 
   # update other totals-counter
-  $log_total_pids_displayed = scalar keys %filtered;
+  $log_total_groups_displayed = scalar keys %filtered;
 
   return %filtered;
 }
 
 
-# filters a patient's files for bams having .bai or .bam.bai files
+# filters a group's files for bams having .bai or .bam.bai files
 sub findBamfilesToDisplay ($) {
-    my ($all_files_of_patient_ref) = @_;
-    my @all_files_of_patient = @$all_files_of_patient_ref;
-    my @unfiltered_bams = grep { $_ =~ /\.bam$/  } @all_files_of_patient;
+    my ($all_files_of_group_ref) = @_;
+    my @all_files_of_group = @$all_files_of_group_ref;
+    my @unfiltered_bams = grep { $_ =~ /\.bam$/  } @all_files_of_group;
 
     # actual filtering steps
-    my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     \@all_files_of_patient);
-    my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', \@all_files_of_patient);
+    my @bams_having_bais    = findFilesWithIndices('.bam', '.bai',     \@all_files_of_group);
+    my @bams_having_bambais = findFilesWithIndices('.bam', '.bam.bai', \@all_files_of_group);
 
     # merge results, removing duplicates (some .bams provide both .bai + .bam.bai, and so occur in both bams_having_X lists)
     my %unique_merged_bams_having_indices = map { $_, 1 } (@bams_having_bais, @bams_having_bambais);
@@ -588,15 +592,15 @@ sub findBamfilesToDisplay ($) {
 }
 
 
-# finds files ending in .<parameter>$ among a patient's files
+# finds files ending in .<parameter>$ among a group's files
 # extension is match as case-insensitive regex.
 sub findFilesWithExtension ($$) {
-  my ($extension, $all_files_of_patient_ref) = @_;
-  my @all_files_of_patient = @$all_files_of_patient_ref;
+  my ($extension, $all_files_of_group_ref) = @_;
+  my @all_files_of_group = @$all_files_of_group_ref;
 
   my $extension_pattern = '\.' . quotemeta($extension) . '$';
   
-  return grep { $_ =~ /$extension_pattern/i } @all_files_of_patient;
+  return grep { $_ =~ /$extension_pattern/i } @all_files_of_group;
 }
 
 
@@ -607,15 +611,15 @@ sub findFilesWithExtension ($$) {
 # effectively removing both indexless-datafiles AND the indexfiles from the input
 sub findFilesWithIndices ($$$) {
   #       .bam       , .bam.bai || .bai,   [....]
-  my ($data_extension, $index_extension, $all_files_of_patient_ref) = @_;
-  my @all_files_of_patient = @$all_files_of_patient_ref;
+  my ($data_extension, $index_extension, $all_files_of_group_ref) = @_;
+  my @all_files_of_group = @$all_files_of_group_ref;
 
   my $data_pattern  = quotemeta($data_extension)  . '$';
   my $index_pattern = quotemeta($index_extension) . '$';
 
   # first, divide our datafiles and indexfiles into separate buckets
-  my @found_data    = grep { $_ =~ /$data_pattern/  } @all_files_of_patient;
-  my @found_indices = grep { $_ =~ /$index_pattern/ } @all_files_of_patient;
+  my @found_data    = grep { $_ =~ /$data_pattern/  } @all_files_of_group;
+  my @found_indices = grep { $_ =~ /$index_pattern/ } @all_files_of_group;
 
   # second, map each datafile to its _expected_ indexfile
   my %expected_indices = map {
@@ -647,13 +651,13 @@ sub findFilesWithIndices ($$$) {
 }
 
 
-# prepares patient datastructure to insert into template
+# prepares datastructure to insert into template
 #
-# it creates the nested structure for the list-of-(patients-with-list-of-their-files)
+# it creates the nested structure for the list-of-(groups-with-list-of-their-files)
 # formatted as a nested list-of-maps, suitable for HTML::Template
 # [
 #  {
-#    patient_id => "patient_1",
+#    group_id => "group_1",
 #    linked_files => [
 #      { diskfilename => "file1", displayfilename => "[analysis] /some/folder/file1" },
 #      { diskfilename => "file2", displayfilename => "[analysis] /some/folder/file2" },
@@ -662,25 +666,25 @@ sub findFilesWithIndices ($$$) {
 #  },
 # ...]
 #
-sub formatPatientDataForTemplate (%) {
-  my %files_per_pid = @_;
+sub formatGroupDataForTemplate (%) {
+  my %files_per_group = @_;
 
   # sorry for the next unreadable part!
   return [ map {
-    # outer 'list' of patient + linked-files
-    my $pid = $_;
+    # outer 'list' of group + linked-files
+    my $group = $_;
     {
-      patient_id    => $pid,
+      group_id    => $group,
       linked_files  => [ map {
         # inner 'list' of filenames
         my $filename = $_;
         {
-          diskfilename    => getLinkNameFor($pid, $filename),
+          diskfilename    => getLinkNameFor($group, $filename),
           displayfilename => getDisplayNameFor($filename)
         }
-      } @{$files_per_pid{$pid}} ]
+      } @{$files_per_group{$group}} ]
     }
-  } (sort keys %files_per_pid) ];
+  } (sort keys %files_per_group) ];
 }
 
 
@@ -719,13 +723,13 @@ sub printReport () {
 
 sub printShortReport () {
   print "total files scanned (excl. unreadable): " .        $log_total_files_scanned    . "\n" .
-        "total patients displayed:               " .        $log_total_pids_displayed   . "\n" .
+        "total groups displayed:                 " .        $log_total_groups_displayed . "\n" .
         "total files displayed:                  " .        $log_total_files_displayed  . "\n" .
         "deepest directory scanned:              " .        $log_deepest_scan_depth     . "\n" .
         "deepest file found:                     " .        $log_deepest_find_depth     . "\n" .
         "shallowest file found:                  " .        $log_shallowest_find_depth  . "\n" .
         "ignored files:                          " .        $log_ignored_files          . "\n" .
-        "undetectable pids:                      " . scalar @log_pid_undetectable_paths . "\n" .
+        "ungroupable paths:                      " . scalar @log_ungroupable_paths      . "\n" .
         "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n" .
         "symlink clashes:                        " . scalar @log_symlink_clashes        . "\n" .
         "unreadable files:                       " . scalar @log_unreadable_paths       . "\n" .
@@ -739,7 +743,7 @@ sub printLongReport ($) {
   my ($fh) = @_;
 
   print $fh "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
-            "total patients displayed:               $log_total_pids_displayed\n" .
+            "total groups displayed:                 $log_total_groups_displayed\n" .
             "total files displayed:                  $log_total_files_displayed\n".
             "deepest directory scanned (from / ):    $log_deepest_scan_depth\n" .
             "deepest file found        (from / ):    $log_deepest_find_depth\n" .
@@ -747,11 +751,11 @@ sub printLongReport ($) {
             "ignored files:                          $log_ignored_files\n" .
             "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S", $log_last_modification_time) . "\n";
 
-  printWithHeader($fh, "undetectable PIDs",      \@log_pid_undetectable_paths);
+  printWithHeader($fh, "ungroupable paths",      \@log_ungroupable_paths);
   printWithHeader($fh, "files without index",    \@log_files_without_indices);
   printWithHeader($fh, "symlink name clashes",   \@log_symlink_clashes);
 
-  printWithHeader($fh, "Unreadable paths",       \@log_unreadable_paths);
+  printWithHeader($fh, "unreadable paths",       \@log_unreadable_paths);
 
   my @parsed_unreadable_summary = map {
       $log_unreadable_summary{$_} > 1 ?
@@ -791,14 +795,14 @@ __DATA__
 <head>
   <title><!-- TMPL_VAR NAME=project_name --> IGV linker</title>
   <style type="text/css" media="screen"><!--
-    /* visual separation of patients */
+    /* visual separation of groups */
     H2  {
       background: lightgray;
       margin-top:    1.2em;
       margin-bottom:   0em;
     }
     UL {
-      margin-top: 0.7em;   /* draw pid-links closer to their heading */
+      margin-top: 0.7em;   /* draw group-links closer to their heading */
       padding-left: 1.6em; /* reduce indent of bullet points */
     }
 
@@ -843,8 +847,8 @@ __DATA__
   </ul>
 </small></p>
 
-<!-- Right-hanging menu: has quick-links to each patient-id header below -->
-<div id="patient-menu" style="
+<!-- Right-hanging menu: has quick-links to each group header below -->
+<div id="group-menu" style="
   position: fixed;
   top: 5px;
   bottom: 5px;
@@ -861,13 +865,13 @@ __DATA__
   white-space: nowrap;
 ">
 Jump to:
-<ul><!-- TMPL_LOOP NAME=patients -->
-  <li><a href="#<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></a></li><!-- /TMPL_LOOP --></ul>
+<ul><!-- TMPL_LOOP NAME=groups -->
+  <li><a href="#<!-- TMPL_VAR NAME=group_id -->"><!-- TMPL_VAR NAME=group_id --></a></li><!-- /TMPL_LOOP --></ul>
 </div>
 
-<h1>Patient Information</h1>
-<!-- TMPL_LOOP NAME=patients -->
-  <h2 id="<!-- TMPL_VAR NAME=patient_id -->"><!-- TMPL_VAR NAME=patient_id --></h2>
+<h1>IGV files</h1>
+<!-- TMPL_LOOP NAME=groups -->
+  <h2 id="<!-- TMPL_VAR NAME=group_id -->"><!-- TMPL_VAR NAME=group_id --></h2>
   <ul class="files"><!-- TMPL_LOOP NAME=linked_files -->
     <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=diskfilename -->"><!-- TMPL_VAR NAME=displayfilename --></a></li><!-- /TMPL_LOOP -->
   </ul>
