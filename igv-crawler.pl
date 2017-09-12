@@ -35,11 +35,14 @@ my %siteconfig = (
     # the externally visible URL for 'host_base_dir'
     #   (NO TRAILING SLASH!)
     www_base_url  => "https://otpfiles.dkfz.de",
+
+    # subdir name, for both file-system and URL, wherein we store the symlinks
+    #   to the actual data files.
+    link_dir => "links",
+
 );
 
 
-# subdir name inside siteconfig{'host_base_dir'} where to store symlinks for both file-system and URL
-my $link_dir = "links";
 
 my $log_dir = "/home/icgcdata/logs";
 
@@ -186,9 +189,9 @@ sub parseArgs () {
 
   my $project_name_lower = lc $project_name;
   # TODO #2 PORTABILITY: extract "index.html" to constant in config file
-  my $output_file_path   = catfile( $siteconfig{'host_base_dir'}, $project_name_lower, "index.html");
-  my $link_dir_path      = catdir ( $siteconfig{'host_base_dir'}, $project_name_lower, $link_dir);
-  my $link_dir_url       = $siteconfig{'www_base_url'} . "/" . $project_name_lower . "/" . $link_dir; # trailing slash is added in __DATA__ template
+  my $output_file_path   = catfile( $siteconfig{'host_base_dir'},     $project_name_lower,      "index.html");
+  my $link_dir_path      = catdir ( $siteconfig{'host_base_dir'},     $project_name_lower,      $siteconfig{'link_dir'});
+  my $link_dir_url       =          $siteconfig{'www_base_url'} ."/". $project_name_lower ."/". $siteconfig{'link_dir'}; # trailing slash is added in __DATA__ template
 
   return ($link_dir_path, $link_dir_url, $output_file_path)
 }
@@ -365,7 +368,7 @@ sub clearOldLinksIn ($) {
   print "Clearing out links in $dir_to_clear\n";
 
   # sanity, don't let this work on directories that aren't ours
-  # intentionally hardcoding 'links' instead of $link_dir, so it'll break if future people are careless (recursive "find -delete" is NASTY)
+  # intentionally hardcoding 'links' instead of $siteconfig{'link_dir'}, so it'll break if future people are careless (recursive "find -delete" is NASTY)
   # TODO #2 PORTABILITY: un-hardcode this path, somehow tie it too config file
   die "SAFETY ABORT: parameters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/;
 
