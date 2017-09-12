@@ -40,6 +40,12 @@ my %siteconfig = (
     #   to the actual data files.
     link_dir => "links",
 
+    # the name of the generated project page
+    #   we recommend to have the default directory-pagename of the server here, often "index.html".
+    #   Doing so means that opening a project directory directly opens the crawled, clickable page,
+    #   instead of a (generated) directory listing, which would leak internal details.
+    page_name => "index.html",
+
     log_dir  => "/home/icgcdata/logs",
 
     # contact email adress printed in the header of each project page.
@@ -193,8 +199,7 @@ sub parseArgs () {
   @prune_files = split(',', join(',', @prune_files));
 
   my $project_name_lower = lc $project_name;
-  # TODO #2 PORTABILITY: extract "index.html" to constant in config file
-  my $output_file_path   = catfile( $siteconfig{'host_base_dir'},     $project_name_lower,      "index.html");
+  my $output_file_path   = catfile( $siteconfig{'host_base_dir'},     $project_name_lower,      $siteconfig{'page_name'});
   my $link_dir_path      = catdir ( $siteconfig{'host_base_dir'},     $project_name_lower,      $siteconfig{'link_dir'});
   my $link_dir_url       =          $siteconfig{'www_base_url'} ."/". $project_name_lower ."/". $siteconfig{'link_dir'}; # trailing slash is added in __DATA__ template
 
