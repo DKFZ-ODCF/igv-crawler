@@ -41,6 +41,10 @@ my %siteconfig = (
     link_dir => "links",
 
     log_dir  => "/home/icgcdata/logs",
+
+    # contact email adress printed in the header of each project page.
+    # recommended to have the server admin, or whoever makes the project configs, here
+    contact_email => 'j.kerssemakers@dkfz-heidelberg.de',
 );
 
 
@@ -496,6 +500,7 @@ sub makeHtmlPage ($$$%) {
   # insert everything into the template
   $template->param(
     project_name  => $project_name,
+    contact_email => $siteconfig{'contact_email'},
     timestamp     => $timestamp,
     file_host_dir => $file_host_dir,
     groups        => $formatted_groups,
@@ -844,8 +849,7 @@ __DATA__
 
 <p id="about-blurb"><small>
   IGV-linker v2.0, a service by the eilslabs data management group<br/>
-  <!-- #TODO #2 PORTABILITY: makes contact-email configurable in site-config file -->
-  questions, wishes, improvements or suggestions: <a href="mailto:j.kerssemakers@dkfz-heidelberg.de">j.kerssemakers@dkfz-heidelberg.de</a><br/>
+  questions, wishes, improvements or suggestions: <a href="mailto:<!-- TMPL_VAR NAME=contact_email -->"><!-- TMPL_VAR NAME=contact_email --></a><br/>
   powered by <a href="http://www.threepanelsoul.com/comic/on-perl">readable perl&trade;</a><br/>
   last updated: <!-- TMPL_VAR NAME=timestamp --><br/>
   generated from files found in:
