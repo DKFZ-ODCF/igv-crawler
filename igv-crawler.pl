@@ -31,10 +31,12 @@ my %siteconfig = (
     #   script will create subdirs in it named 'lc $project_name'
     #   (must have trailing slash!)
     host_base_dir => "/public-otp-files/",
+
+    # the externally visible URL for 'host_base_dir'
+    #   (NO TRAILING SLASH!)
+    www_base_url  => "https://otpfiles.dkfz.de",
 );
 
-# the externally visible URL for siteconfig{'host_base_dir'} (NO TRAILING SLASH!)
-my $www_base_url  = "https://otpfiles.dkfz.de";
 
 # subdir name inside siteconfig{'host_base_dir'} where to store symlinks for both file-system and URL
 my $link_dir = "links";
@@ -186,7 +188,7 @@ sub parseArgs () {
   # TODO #2 PORTABILITY: extract "index.html" to constant in config file
   my $output_file_path   = catfile( $siteconfig{'host_base_dir'}, $project_name_lower, "index.html");
   my $link_dir_path      = catdir ( $siteconfig{'host_base_dir'}, $project_name_lower, $link_dir);
-  my $link_dir_url       = $www_base_url . "/" . $project_name_lower . "/" . $link_dir; # trailing slash is added in __DATA__ template
+  my $link_dir_url       = $siteconfig{'www_base_url'} . "/" . $project_name_lower . "/" . $link_dir; # trailing slash is added in __DATA__ template
 
   return ($link_dir_path, $link_dir_url, $output_file_path)
 }
