@@ -25,6 +25,9 @@ use HTML::Template;
 #
 # TODO #2: migrate to external settings file for better portability
 
+# hash containing all site-specific configuration parameters
+my %siteconfig = {}
+
 # the local FS dir where apache looks for stuff to host
 #   script will create subdirs in it named 'lc $project_name'
 #   (must have trailing slash!)
