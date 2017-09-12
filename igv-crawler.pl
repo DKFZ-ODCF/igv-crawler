@@ -23,7 +23,7 @@ use HTML::Template;
 #####################################################################################
 # CONSTANTS
 #
-# TODO: migrate to external settings file for better portability
+# TODO #2: migrate to external settings file for better portability
 
 # the local FS dir where apache looks for stuff to host
 #   script will create subdirs in it named 'lc $project_name'
@@ -180,7 +180,7 @@ sub parseArgs () {
   @prune_files = split(',', join(',', @prune_files));
 
   my $project_name_lower = lc $project_name;
-  # TODO PORTABILITY: extract "index.html" to constant in config file
+  # TODO #2 PORTABILITY: extract "index.html" to constant in config file
   my $output_file_path   = catfile( $host_base_dir, $project_name_lower, "index.html");
   my $link_dir_path      = catdir ( $host_base_dir, $project_name_lower, $link_dir);
   my $link_dir_url       = $www_base_url . "/" . $project_name_lower . "/" . $link_dir; # trailing slash is added in __DATA__ template
@@ -223,11 +223,11 @@ sub main {
           ->directory
           ->or(
             File::Find::Rule->name( qr/^\..+/ ),             # skip .hidden directories (writing it as '.*' doesn't seem to work, that excludes everything?!)
-            # TODO PORTABILITY: un-hardcode roddy dir
+            # TODO #2 PORTABILITY: un-hardcode roddy dir
             File::Find::Rule->name( 'roddyExecutionStore' ), # skip roddy working directories
             File::Find::Rule->name( @prune_dirs )            # skip user-defined directories
           )
-          # TODO: log count of skipped dirs
+          # TODO #11: log count of pruned dirs
           ->prune
           ->discard
         ,
@@ -241,7 +241,6 @@ sub main {
       )
 
       # include files with IGV extensions (if they're not empty placeholders)
-      #TODO: also index all .gz counterparts
       ->file
       ->name(
         '*.bai',
@@ -362,7 +361,7 @@ sub clearOldLinksIn ($) {
 
   # sanity, don't let this work on directories that aren't ours
   # intentionally hardcoding 'links' instead of $link_dir, so it'll break if future people are careless (recursive "find -delete" is NASTY)
-  # TODO PORTABILITY: un-hardcode this path, somehow tie it too config file
+  # TODO #2 PORTABILITY: un-hardcode this path, somehow tie it too config file
   die "SAFETY ABORT: parameters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/;
 
   # delete all symlinks in our directory
@@ -517,8 +516,7 @@ sub findDatafilesToDisplay (%) {
     # meaningful temp names
     my @all_files_of_group = sort @{ $original{ $group_id }};
 
-#TODO: rewrite this to also work with .gz extensions
-#TODO: invert this: filter out the index-files from the total instead of everything-but-the-indices; will be shorter and less grepping
+#TODO #12: invert this: filter out the index-files from the total instead of everything-but-the-indices; will be shorter and less grepping
     my @bams_having_indices = findBamfilesToDisplay(\@all_files_of_group);
     my @attrtxt       = findFilesWithExtension('attr.txt',  \@all_files_of_group);
     my @bed           = findFilesWithExtension('bed',       \@all_files_of_group);
@@ -837,7 +835,7 @@ __DATA__
 
 <p id="about-blurb"><small>
   IGV-linker v2.0, a service by the eilslabs data management group<br/>
-  <!-- #TODO PORTABILITY: makes this configurable in site-config file -->
+  <!-- #TODO #2 PORTABILITY: makes contact-email configurable in site-config file -->
   questions, wishes, improvements or suggestions: <a href="mailto:j.kerssemakers@dkfz-heidelberg.de">j.kerssemakers@dkfz-heidelberg.de</a><br/>
   powered by <a href="http://www.threepanelsoul.com/comic/on-perl">readable perl&trade;</a><br/>
   last updated: <!-- TMPL_VAR NAME=timestamp --><br/>
