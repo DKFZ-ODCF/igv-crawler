@@ -40,11 +40,12 @@ my %siteconfig = (
     #   to the actual data files.
     link_dir => "links",
 
+    log_dir  => "/home/icgcdata/logs",
 );
 
 
 
-my $log_dir = "/home/icgcdata/logs";
+
 
 # END CONSTANTS #####################################################################
 
@@ -717,7 +718,7 @@ sub printReport () {
   # .. and also log (always long-form) to a file
   # make sure we don't need subdirs in the log-dir (project names may contain slashes to create reports in subdirs)
   (my $safe_project_name = $project_name) =~ s/\//_/;
-  my $log_file = catfile($log_dir, $safe_project_name . ".log");
+  my $log_file = catfile($siteconfig{'log_dir'}, $safe_project_name . ".log");
   my $success = open( my $fh, ">", $log_file);
   if ($success) {
     printLongReport($fh);
