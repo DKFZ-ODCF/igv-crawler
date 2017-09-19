@@ -400,7 +400,7 @@ sub clearOldLinksIn ($) {
 #     some-link-4 -> actual_datafile_4
 #
 # SECURITY CONSIDERATION: Working with links into the actual data folders allows us
-# to NOT expose the entire big storage in the server's document root, limiting 
+# to NOT expose the entire big storage in the server's document root, limiting
 # the impact of any data breaches. Instead of the entire storage, they see only the
 # IGV-relevant files.
 sub makeAllFileSystemLinks ($%) {
@@ -522,7 +522,7 @@ sub makeHtmlPage ($$$%) {
 # - .tdf files created by igvtools
 #
 # any index-files (.bai's, .bam.bai's) are not explicitly listed in the html-output.
-# Their links already exist by this point though, (see sub makeAllFileSystemLinks), 
+# Their links already exist by this point though, (see sub makeAllFileSystemLinks),
 # so IGV can derive the index-file link from the data-file link (IGV's preferred method).
 sub findDatafilesToDisplay (%) {
   my (%original) = @_;
@@ -614,7 +614,7 @@ sub findFilesWithExtension ($$) {
   my @all_files_of_group = @$all_files_of_group_ref;
 
   my $extension_pattern = '\.' . quotemeta($extension) . '$';
-  
+
   return grep { $_ =~ /$extension_pattern/i } @all_files_of_group;
 }
 
