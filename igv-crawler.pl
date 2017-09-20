@@ -24,13 +24,6 @@ use Config::Simple;
 #####################################################################################
 # SITE CONFIG
 #
-# In this section, we hold all the site/server-specific settings.
-# Things that are the same for all project hosted on this server, i.e. those settings
-# that interact with the web-hosting software, not the project data to visualise.
-#
-# TODO #2: migrate to external settings file for better portability
-
-# hash containing all site-specific configuration parameters
 my $siteconfig_file = 'otpfiles-siteconfig.ini';
 my %siteconfig = ();
 die "ABORTING: could not load site-specific configuration file '$siteconfig_file'" if not -e $siteconfig_file;
