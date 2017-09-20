@@ -24,7 +24,7 @@ use Config::Simple;
 #####################################################################################
 # SITE CONFIG
 #
-my $siteconfig_file = 'otpfiles-siteconfig.ini';
+my $siteconfig_file = 'igvcrawler-siteconfig.ini';
 my %siteconfig = ();
 die "ABORTING: could not load site-specific configuration file '$siteconfig_file'" if not -e $siteconfig_file;
 Config::Simple->import_from($siteconfig_file, \%siteconfig);
