@@ -18,6 +18,7 @@ use File::Path;
 use File::Spec::Functions;
 use Getopt::Long;
 use HTML::Template;
+use Config::Simple;
 
 
 #####################################################################################
@@ -30,32 +31,10 @@ use HTML::Template;
 # TODO #2: migrate to external settings file for better portability
 
 # hash containing all site-specific configuration parameters
-my %siteconfig = (
-    # the local FS dir where apache looks for stuff to host
-    #   script will create subdirs in it named 'lc $project_name'
-    #   (must have trailing slash!)
-    host_base_dir => "/public-otp-files/",
-
-    # the externally visible URL for 'host_base_dir'
-    #   (NO TRAILING SLASH!)
-    www_base_url  => "https://otpfiles.dkfz.de",
-
-    # subdir name, for both file-system and URL, wherein we store the symlinks
-    #   to the actual data files.
-    link_dir => "links",
-
-    # the name of the generated project page
-    #   we recommend to have the default directory-pagename of the server here, often "index.html".
-    #   Doing so means that opening a project directory directly opens the crawled, clickable page,
-    #   instead of a (generated) directory listing, which would leak internal details.
-    page_name => "index.html",
-
-    log_dir  => "/home/icgcdata/logs",
-
-    # contact email adress printed in the header of each project page.
-    # recommended to have the server admin, or whoever makes the project configs, here
-    contact_email => 'j.kerssemakers@dkfz-heidelberg.de',
-);
+my $siteconfig_file = 'otpfiles-siteconfig.ini';
+my %siteconfig = ();
+die "ABORTING: could not load site-specific configuration file '$siteconfig_file'" if not -e $siteconfig_file;
+Config::Simple->import_from($siteconfig_file, \%siteconfig);
 
 
 #####################################################################################
