@@ -42,6 +42,8 @@ assert_key_exists('page_name');
 assert_key_exists('log_dir');
 assert_key_exists('contact_email');
 
+die "ERROR: specified 'host_base_dir' does not exist: $siteconfig{'host_base_dir'}" unless -d $siteconfig{'host_base_dir'};
+
 
 #####################################################################################
 # COMMAND LINE PARAMETERS
