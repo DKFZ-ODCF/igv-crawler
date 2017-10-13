@@ -354,7 +354,7 @@ sub deriveGroupIdFrom ($) {
 
 # recursively clears all links from a directory, and then all empty dirs.
 # This should normally clear a link-dir made by this script, but nothing else.
-# sanity-checks the provided directory to match /public-otp-files/*/links, to avoid "find -delete" mishaps
+# sanity-checks the provided directory to match "$host_base_dir/*/links", to avoid "find -delete" mishaps
 sub clearOldLinksIn ($) {
   my ($dir_to_clear) = @_;
 
@@ -362,8 +362,8 @@ sub clearOldLinksIn ($) {
 
   # sanity, don't let this work on directories that aren't ours
   # intentionally hardcoding 'links' instead of $siteconfig{'link_dir'}, so it'll break if future people are careless (recursive "find -delete" is NASTY)
-  # TODO #2 PORTABILITY: un-hardcode this path, somehow tie it too config file
-  die "SAFETY ABORT: parameters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ /^\/public-otp-files\/.*\/links/;
+  my $pattern = qr/^${siteconfig{'host_base_dir'}}\/.+\/links/;
+  die "SAFETY ABORT: parameters specify invalid directory to clear: $dir_to_clear" unless $dir_to_clear =~ $pattern;
 
   # delete all symlinks in our directory
   system( "find -P '$dir_to_clear' -mount -depth -type l  -delete" );
