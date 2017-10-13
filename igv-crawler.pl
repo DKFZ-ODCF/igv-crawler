@@ -28,6 +28,19 @@ my $siteconfig_file = 'igvcrawler-siteconfig.ini';
 my %siteconfig = ();
 die "ABORTING: could not load site-specific configuration file '$siteconfig_file'" if not -e $siteconfig_file;
 Config::Simple->import_from($siteconfig_file, \%siteconfig);
+# Sanity checks: all expected values should be defined
+
+sub assert_key_exists($) {
+  my ($key) = @_;
+  die "ERROR: '$key' not defined in $siteconfig_file" unless exists $siteconfig{$key};
+}
+
+assert_key_exists('host_base_dir');
+assert_key_exists('www_base_url');
+assert_key_exists('link_dir');
+assert_key_exists('page_name');
+assert_key_exists('log_dir');
+assert_key_exists('contact_email');
 
 
 #####################################################################################
