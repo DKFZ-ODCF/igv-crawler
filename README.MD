@@ -44,13 +44,9 @@ Since crawling can take fairly long (we've seen hours on some bigger project), d
 - If you use this for your local files on your local computer, then basically none.
 - If however you are using the server-based setup, beware that you are providing a single point of access (and failure/hacking) into your dataset. Depending on your previous setup, 
   this may be a setback, or actually be an improvement.
-
   - Consider carefully if you want this single server to be internet-facing. For many use-cases, an intranet-only server will suffice. However, it is also a convenient way to share data with collaborators off-site.
-
   - Also be aware that the crawler and server user will need access to all the data in order to crawl it and serve the file-contents. This will make this user fairly powerfull, and thus risky.
-
   - To limit the amount of data that is 'visible' to the webserver process, the webroot and dataset do not need to overlap. The crawler will generate symlinks in the webroot that point at
     the dataset, thus ensuring that only relevant data is exposed. Of course, the dataset must still be mounted on the server, so that the symlinks will resolve when the server software accesses them.
     Setting up a single server instance per project, each running under a different user, seems to be too convoluted to be worth the effort.
-
   - Finally, individual reports can be generated per project/dataset, and each report/subfolder can be protected by its own access control policy in the webservers' config. Make sure that the server access controls match your organisations access controls for the datasets (for example, by tying the webserver configuration to the project access groups in your organisations' AD/LDAP).
