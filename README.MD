@@ -14,6 +14,15 @@ This crawler generates an overview (thus saving you from tediousness) and offers
 
 Even so, I've written the crawler generic enough that it can search local disks of your laptop as easily as petabyte network mounts, and will also work with URLs to the local filesystem (`FILE:\\` urls).
 
+
+## License and contribution
+
+The script and all related example code is licensed under the MIT license.
+Unless specifically stated otherwise, all contributions intentionally submitted to this project will be governed by this same license.
+
+IGV itself is also governed by MIT, so this should impose no extra licensing headaches for you.
+
+
 ## Requirements
 
 ### Perl
@@ -35,10 +44,12 @@ The crawler generates `symlink`s to only expose IGV-relevant files in the webroo
 The crawler generates static HTML pages so it requires a webserver. We prefer apache2 for its excellent AD/LDAP-integration, but any static webserver should work, as long as it supports your authentication model and the HTTP [byte-range requests IGV requires](http://software.broadinstitute.org/software/igv/LoadData) for certain file formats.
 If you only need an overview of 'local' files on a single machine (including network shares attached to that machine), you can also generate the report with local `File:\\` URLs.
 
+
 ## Design considerations
 The crawler is kept deliberately simple. It needs no database, and each crawl will assume nothing about previous states. Each crawl will fully crawl the specified folders.
 To keep crawl times manageable, some directives are provided to prune fruitless sub-folders.
 Since crawling can take fairly long (we've seen hours on some bigger project), depending on the number of folders in the hierarchy, the crawl will first collect the new state before overwriting the previous report, ensuring that the previous state remains useable during crawling. Only during the few seconds where the symlinks are replaced and the HTML file is rewritten will there be problems the user could notice.
+
 
 ## Security considerations
 - If you use this for your local files on your local computer, then basically none.
