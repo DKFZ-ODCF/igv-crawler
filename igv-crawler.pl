@@ -347,18 +347,17 @@ sub addToIndex ($) {
   my ($file) = @_;
 
   # extract the group label from the identifier
+  #  this is either a regex-match, or the catch-all group 'unsorted files'
   my $group_id = deriveGroupIdFrom($file);
-  if ($group_id ne 'ERROR-NO-MATCH') {
-    # append the file-path to our list of files-per-group
-    $bambai_file_index{$group_id} = [] unless defined $bambai_file_index{$group_id};
-    push @{ $bambai_file_index{$group_id} }, $file;
+  # append the file-path to our list of files-per-group
+  $bambai_file_index{$group_id} = [] unless defined $bambai_file_index{$group_id};
+  push @{ $bambai_file_index{$group_id} }, $file;
 
-    # Check for data "hotness": when was our dataset of interest last changed?
-    #  (i.e. how regularly should I re-run this script?)
-    my $mtime = stat($file)->mtime;
-    if ($mtime > $log_last_modification_time) {
-      $log_last_modification_time = $mtime;
-    }
+  # Check for data "hotness": when was our dataset of interest last changed?
+  #  (i.e. how regularly should I re-run this script?)
+  my $mtime = stat($file)->mtime;
+  if ($mtime > $log_last_modification_time) {
+    $log_last_modification_time = $mtime;
   }
 }
 
@@ -375,7 +374,7 @@ sub deriveGroupIdFrom ($) {
     return $group_id;
   } else {
     push @log_ungroupable_paths, $filepath;
-    return 'ERROR-NO-MATCH';
+    return '~ unsorted files'; # '~' so it sorts at the end below all detectable groups
   }
 }
 
