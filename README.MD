@@ -47,14 +47,14 @@ If you only need an overview of 'local' files on a single machine (including net
 
 ## Design considerations
 The crawler is kept deliberately simple. It needs no database, and each crawl will assume nothing about previous states. Each crawl will fully crawl the specified folders.
-To keep crawl times manageable, some directives are provided to prune fruitless sub-folders.
-Since crawling can take fairly long (we've seen hours on some bigger project), depending on the number of folders in the hierarchy, the crawl will first collect the new state before overwriting the previous report, ensuring that the previous state remains useable during crawling. Only during the few seconds where the symlinks are replaced and the HTML file is rewritten will there be problems the user could notice.
+To keep crawl times manageable, some directives are provided to prune fruitless sub-folders.  
+Since crawling can take fairly long (we've seen hours on some bigger project), the crawl will first collect the new state before overwriting the previous report, ensuring that the previous state remains useable during crawling. Only during the few seconds where the symlinks are replaced and the HTML file is rewritten will there be problems the user could notice.
 
 
 ## Security considerations
 - If you use this for your local files on your local computer, then basically none.
 - If however you are using the server-based setup, beware that you are providing a single point of access (and failure/hacking) into your dataset. Depending on your previous setup, 
-  this may be a setback, or actually be an improvement.
+  this may be a setback, or an actual improvement.
   - Consider carefully if you want this single server to be internet-facing. For many use-cases, an intranet-only server will suffice. However, it is also a convenient way to share data with collaborators off-site.
   - Also be aware that the crawler and server user will need access to all the data in order to crawl it and serve the file-contents. This will make this user fairly powerfull, and thus risky.
   - To limit the amount of data that is 'visible' to the webserver process, the webroot and dataset do not need to overlap. The crawler will generate symlinks in the webroot that point at
