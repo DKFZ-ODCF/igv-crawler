@@ -103,8 +103,6 @@ my @log_unreadable_paths;         # paths that File::find couldn't enter due to 
 my %log_unreadable_summary;       # Hash that has the final subdir of all unreadable paths, and their occurance count. Allows identification of recurring permission problems, e.g. tool-generated "screenshots/"
 #####################################################################################
 
-my $startup_time = time();
-
 # THE var: global list to keep track of all the bam+bai files we have found
 # format:
 # {
@@ -223,7 +221,30 @@ sub parseArgs () {
 sub main {
   my ($link_dir_path, $link_dir_url, $output_file_path) = parseArgs();
 
-  print "\n" . time2str("%Y-%m-%d %H:%M:%S", $startup_time) . " - Scanning $project_name for IGV-relevant files in:\n";
+  crawl();
+
+  # remove (potentially outdated/stale) links from previous run.
+  clearOldLinksIn($link_dir_path);
+
+  # make found/desired files accessible in www-directory
+  #
+  # SECURITY IMPLICATIONS: by only providing links to specific files
+  #   we save ourselves the problem of making the ENTIRE project hierarchy
+  #   available over www, thus limiting our security risk
+  makeAllFileSystemLinks($link_dir_path, %bambai_file_index);
+
+  # static html page linking to lsdf-files in IGV-external-control format
+  makeHtmlPage($output_file_path, $link_dir_url, $project_name, %bambai_file_index);
+
+  #feedback for poor admin
+  printReport();
+}
+
+
+sub crawl () {
+  my $start = time();
+
+  print "\n" . time2str("%Y-%m-%d %H:%M:%S", $start) . " - Scanning $project_name for IGV-relevant files in:\n";
   print "  $_\n" for @scan_dirs;
 
   my $rule = (
@@ -242,8 +263,7 @@ sub main {
           $log_deepest_scan_depth = $depth;
         }
 
-        # don't discard anything
-        return 1;
+        return 1; # don't discard anything
       } )
 
       # excludes: directories and files to skip
@@ -254,11 +274,11 @@ sub main {
           ->directory
           ->or(
             File::Find::Rule->name( qr/^\..+/ ),             # skip .hidden directories (writing it as '.*' doesn't seem to work, that excludes everything?!)
-            # TODO #2 PORTABILITY: un-hardcode roddy dir
+            # TODO #13 PORTABILITY: un-hardcode roddy dir
             File::Find::Rule->name( 'roddyExecutionStore' ), # skip roddy working directories
             File::Find::Rule->name( @prune_dirs )            # skip user-defined directories
           )
-          # TODO #11: log count of pruned dirs
+          # TODO #4: log count of pruned dirs
           ->prune
           ->discard
         ,
@@ -326,23 +346,7 @@ sub main {
   }
 
   my $done_crawling = time();
-  print "    (took " . ($done_crawling - $startup_time) . " seconds)\n";
-
-  # remove (potentially outdated/stale) links from previous run.
-  clearOldLinksIn($link_dir_path);
-
-  # make found/desired files accessible in www-directory
-  #
-  # SECURITY IMPLICATIONS: by only providing links to specific files
-  #   we save ourselves the problem of making the ENTIRE project hierarchy
-  #   available over www, thus limiting our security risk
-  makeAllFileSystemLinks($link_dir_path, %bambai_file_index);
-
-  # static html page linking to lsdf-files in IGV-external-control format
-  makeHtmlPage($output_file_path, $link_dir_url, $project_name, %bambai_file_index);
-
-  #feedback for poor admin
-  printReport();
+  print "    (took " . ($done_crawling - $start) . " seconds)\n";
 }
 
 
@@ -529,7 +533,7 @@ sub makeHtmlPage ($$$%) {
   $template->param(
     project_name  => $project_name,
     contact_email => $siteconfig{'contact_email'},
-    timestamp     => time2str("%Y-%m-%d %H:%M:%S", $startup_time),
+    timestamp     => time2str("%Y-%m-%d %H:%M:%S", time()),
     file_host_dir => $file_host_dir,
     groups        => $formatted_groups,
     scandirs      => $formatted_scandirs
