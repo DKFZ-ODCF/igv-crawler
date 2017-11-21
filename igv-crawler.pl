@@ -558,50 +558,30 @@ sub findDatafilesToDisplay (%) {
 
   foreach my $group_id (keys %original) {
     # meaningful temp names
-    my @all_files_of_group = sort @{ $original{ $group_id }};
+    my @all_files_of_group = @{ $original{ $group_id }};
 
-#TODO #12: invert this: filter out the index-files from the total instead of everything-but-the-indices; will be shorter and less grepping
-    my @bams_having_indices = findBamfilesToDisplay(\@all_files_of_group);
-    my @attrtxt       = findFilesWithExtension('attr.txt',  \@all_files_of_group);
-    my @bed           = findFilesWithExtension('bed',       \@all_files_of_group);
-    my @bedgraph      = findFilesWithExtension('bedGraph',  \@all_files_of_group);
-    my @bigbed        = findFilesWithExtension('bigbed',    \@all_files_of_group);
-    my @bb            = findFilesWithExtension('bb',        \@all_files_of_group);
-    my @bigwig        = findFilesWithExtension('bigWig',    \@all_files_of_group);
-    my @bw            = findFilesWithExtension('bw',        \@all_files_of_group);
-    my @birdsuite     = findFilesWithExtension('birdseye_canary_calls', \@all_files_of_group);
-    my @broadpeak     = findFilesWithExtension('broadPeak', \@all_files_of_group);
-    my @cbs           = findFilesWithExtension('cbs',       \@all_files_of_group);
-    my @cn            = findFilesWithExtension('cn',        \@all_files_of_group);
-    my @gct           = findFilesWithExtension('gct',       \@all_files_of_group);
-    my @gff           = findFilesWithExtension('gff',       \@all_files_of_group);
-    my @gff3          = findFilesWithExtension('gff3',      \@all_files_of_group);
-    my @gtf           = findFilesWithExtension('gtf',       \@all_files_of_group);
-    my @gistic        = findFilesWithExtension('gistic',    \@all_files_of_group);
-    my @igv           = findFilesWithExtension('igv',       \@all_files_of_group);
-    my @loh           = findFilesWithExtension('loh',       \@all_files_of_group);
-    my @maf           = findFilesWithExtension('maf',       \@all_files_of_group);
-    my @mut           = findFilesWithExtension('mut',       \@all_files_of_group);
-    my @narrowpeak    = findFilesWithExtension('narrowPeak',\@all_files_of_group);
-    my @psl           = findFilesWithExtension('psl',       \@all_files_of_group);
-    my @res           = findFilesWithExtension('res',       \@all_files_of_group);
-    my @seg           = findFilesWithExtension('seg',       \@all_files_of_group);
-    my @snp           = findFilesWithExtension('snp',       \@all_files_of_group);
-    my @tdf           = findFilesWithExtension('tdf',       \@all_files_of_group);
-    my @wig           = findFilesWithExtension('Wig',       \@all_files_of_group);
+    # Special case: bams should only be included if they have an index
+	my @bams_having_indices = findBamfilesToDisplay(\@all_files_of_group);
 
-    my @combined_result = sort(@bams_having_indices, @attrtxt, @bed, @bedgraph, @bigbed, @bb, @bigwig, @bw, @birdsuite, @broadpeak,
-                           @cbs, @cn, @gct, @gff, @gff3, @gtf, @gistic, @igv, @loh, @maf, @mut, @narrowpeak, @psl, @res,
-                           @seg, @snp, @tdf, @wig);
+    # eleminate all index files from the list.
+    #  - .bai
+    #  - .idx
+    # also drop .bam, since they are re-added later
+    my @files_to_show = grep {
+      not ($_ =~ /\.(bai|bam|idx|idx\.gz)$/i)
+    } @all_files_of_group;
+
+    # re-add only those bams that have indices
+    push @files_to_show, @bams_having_indices;
 
     # update totals-counter
-    $log_total_files_displayed += (scalar @combined_result);
+    $log_total_files_displayed += (scalar @files_to_show);
 
-    # store result, if we have any visible files remaining
+    # store result, but ONLY if we have any visible files remaining
     # This means we don't show groups who have no data files.
-    # (though they may still have orphaned index files)
-    if (scalar(@combined_result) > 0) {
-      @{ $filtered{ $group_id } } = @combined_result;
+    # (though they may still have orphaned, unshown, index files)
+    if (scalar(@files_to_show) > 0) {
+      @{ $filtered{ $group_id } } = sort @files_to_show;
     }
   }
 
