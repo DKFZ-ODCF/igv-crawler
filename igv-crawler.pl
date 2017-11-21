@@ -775,7 +775,7 @@ sub printShortReport () {
         "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n" .
         "symlink clashes:                        " . scalar @log_symlink_clashes        . "\n" .
         "unreadable files:                       " . scalar @log_unreadable_paths       . "\n" .
-        "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S%n", $log_last_modification_time) . "\n";
+        "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S", $log_last_modification_time) . "\n";
 
   print "unparseable paths:                      " . scalar @log_undisplayable_paths    . "\n" if $display_mode eq 'regex';
 }
