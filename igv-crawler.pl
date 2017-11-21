@@ -92,6 +92,7 @@ my $log_deepest_scan_depth =0;
 my $log_shallowest_find_depth =999;
 my $log_deepest_find_depth =0;
 my $log_ignored_files =0;
+my $log_pruned_dirs =0;
 my $log_last_modification_time=0; # epoch timestamp of most recently changed file in the index.
 my $log_total_files_displayed =0; # number of files that are displayed
 my $log_total_groups_displayed =0;# number of distinct groups all the files belong to
@@ -278,7 +279,7 @@ sub crawl () {
             File::Find::Rule->name( 'roddyExecutionStore' ), # skip roddy working directories
             File::Find::Rule->name( @prune_dirs )            # skip user-defined directories
           )
-          # TODO #4: log count of pruned dirs
+          ->exec(sub ($$$) { $log_pruned_dirs += 1; return 1; })
           ->prune
           ->discard
         ,
@@ -755,6 +756,7 @@ sub printShortReport () {
         "deepest file found:                     " .        $log_deepest_find_depth     . "\n" .
         "shallowest file found:                  " .        $log_shallowest_find_depth  . "\n" .
         "ignored files:                          " .        $log_ignored_files          . "\n" .
+        "pruned directories:                     " .        $log_pruned_dirs            . "\n" .
         "ungroupable paths:                      " . scalar @log_ungroupable_paths      . "\n" .
         "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n" .
         "symlink clashes:                        " . scalar @log_symlink_clashes        . "\n" .
@@ -775,6 +777,7 @@ sub printLongReport ($) {
             "deepest file found        (from / ):    $log_deepest_find_depth\n" .
             "shallowest file found     (from / ):    $log_shallowest_find_depth\n" .
             "ignored files:                          $log_ignored_files\n" .
+            "pruned directories:                     $log_pruned_dirs\n" .
             "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S", $log_last_modification_time) . "\n";
 
   printWithHeader($fh, "ungroupable paths",      \@log_ungroupable_paths);
