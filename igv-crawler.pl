@@ -103,6 +103,8 @@ my @log_unreadable_paths;         # paths that File::find couldn't enter due to 
 my %log_unreadable_summary;       # Hash that has the final subdir of all unreadable paths, and their occurance count. Allows identification of recurring permission problems, e.g. tool-generated "screenshots/"
 #####################################################################################
 
+my $startup_time = time();
+
 # THE var: global list to keep track of all the bam+bai files we have found
 # format:
 # {
@@ -221,7 +223,7 @@ sub parseArgs () {
 sub main {
   my ($link_dir_path, $link_dir_url, $output_file_path) = parseArgs();
 
-  print "\nScanning $project_name for IGV-relevant files in:\n";
+  print "\n" . time2str("%Y-%m-%d %H:%M:%S", $startup_time) . " - Scanning $project_name for IGV-relevant files in:\n";
   print "  $_\n" for @scan_dirs;
 
   my $rule = (
@@ -509,14 +511,12 @@ sub makeHtmlPage ($$$%) {
 
   my $formatted_groups = formatGroupDataForTemplate(%nonIndexFiles);
   my $formatted_scandirs = [ map { {dir => $_} } @scan_dirs ];
-  # for some reason, writing 'localtime' directly in the param()-map didn't work, so we need a temp-var
-  my $timestamp = localtime;
 
   # insert everything into the template
   $template->param(
     project_name  => $project_name,
     contact_email => $siteconfig{'contact_email'},
-    timestamp     => $timestamp,
+    timestamp     => time2str("%Y-%m-%d %H:%M:%S", $startup_time),
     file_host_dir => $file_host_dir,
     groups        => $formatted_groups,
     scandirs      => $formatted_scandirs
