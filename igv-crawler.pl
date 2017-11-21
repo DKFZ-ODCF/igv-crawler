@@ -325,6 +325,9 @@ sub main {
     }
   }
 
+  my $done_crawling = time();
+  print "    (took " . ($done_crawling - $startup_time) . " seconds)\n";
+
   # remove (potentially outdated/stale) links from previous run.
   clearOldLinksIn($link_dir_path);
 
@@ -387,7 +390,9 @@ sub deriveGroupIdFrom ($) {
 sub clearOldLinksIn ($) {
   my ($dir_to_clear) = @_;
 
-  print "Clearing out links in $dir_to_clear\n";
+  my $start = time();
+
+  print "Clearing out links in $dir_to_clear";
 
   # sanity, don't let this work on directories that aren't ours
   # intentionally hardcoding 'links' instead of $siteconfig{'link_dir'}, so it'll break if future people are careless (recursive "find -delete" is NASTY)
@@ -399,6 +404,8 @@ sub clearOldLinksIn ($) {
   # clear out all directories that are now empty (or contain only empty directories -> '-p')
   # pipe to /dev/null because this way (-p: delete recursively-empty dirs in one go) produces a lot of "subdir X no longer exists"-type warnings
   system( "find -P '$dir_to_clear' -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
+
+  print "\t(took " . (time() - $start) . " seconds)\n";
 }
 
 
@@ -420,7 +427,9 @@ sub clearOldLinksIn ($) {
 sub makeAllFileSystemLinks ($%) {
   my ($public_link_dir, %files_per_group_id) = @_;
 
-  print "creating links in     $public_link_dir\n";
+  my $start = time();
+
+  print "creating links in     $public_link_dir";
 
   foreach my $group_id (keys %files_per_group_id) {
     foreach my $file_to_link (@{ $files_per_group_id{$group_id} }) {
@@ -441,6 +450,8 @@ sub makeAllFileSystemLinks ($%) {
       symlink $file_to_link, $public_path;
     }
   }
+
+  print "\t(took " . (time() - $start) . " seconds)\n";
 }
 
 
@@ -498,6 +509,8 @@ sub getLinkNameFor ($$) {
 sub makeHtmlPage ($$$%) {
   my ($output_file, $file_host_dir, $project_name, %files_per_group_id) = @_;
 
+  my $start = time();
+
   # Get the HTML template from this file's DATA section
   my $html = do { local $/; <DATA> };
   my $template = HTML::Template->new(
@@ -523,6 +536,8 @@ sub makeHtmlPage ($$$%) {
   );
 
   writeContentsToFile($template->output(), $output_file);
+
+  print "\t(took " . (time() - $start) . " seconds)\n";
 }
 
 
@@ -718,7 +733,7 @@ sub formatGroupDataForTemplate (%) {
 sub writeContentsToFile ($$) {
   my ($contents, $filename) = @_;
 
-  print "writing contents to   $filename\n";
+  print "writing contents to   $filename";
   open (FILE, "> $filename") or die "problem opening $filename\n";
   print FILE $contents;
   close (FILE);
