@@ -569,11 +569,12 @@ sub findDatafilesToDisplay (%) {
 	my @bams_having_indices = findBamfilesToDisplay(\@all_files_of_group);
 
     # eleminate all index files from the list.
-    #  - .bai
-    #  - .idx
-    # also drop .bam, since they are re-added later
+    #  - .bai (bam index)
+    #  - .idx / idx.gz (IGV-generated indices)
+    #  - .tbi (tabix)
+    # also drop .bam, since they are re-added later, IFF they have a matching bai index
     my @files_to_show = grep {
-      not ($_ =~ /\.(bai|bam|idx|idx\.gz)$/i)
+      not ($_ =~ /\.(bai|bam|tbi|idx|idx\.gz)$/i)
     } @all_files_of_group;
 
     # re-add only those bams that have indices
