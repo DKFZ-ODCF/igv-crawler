@@ -61,3 +61,8 @@ Since crawling can take fairly long (we've seen hours on some bigger project), t
     the dataset, thus ensuring that only relevant data is exposed. Of course, the dataset must still be mounted on the server, so that the symlinks will resolve when the server software accesses them.
     Setting up a single server instance per project, each running under a different user, seems to be too convoluted to be worth the effort.
   - Finally, individual reports can be generated per project/dataset, and each report/subfolder can be protected by its own access control policy in the webservers' config. Make sure that the server access controls match your organisations access controls for the datasets (for example, by tying the webserver configuration to the project access groups in your organisations' AD/LDAP).
+
+# Further questions
+
+If you think anything is unclear, you have more questions, or feel some feature is missing, please open an issue in this repository!
+I intend to keep improving this service for the foreseeable future, and "usefullness to others" is a factor I wish to improve, and take into account in my development.
