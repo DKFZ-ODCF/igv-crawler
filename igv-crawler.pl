@@ -275,8 +275,6 @@ sub crawl () {
           ->directory
           ->or(
             File::Find::Rule->name( qr/^\..+/ ),             # skip .hidden directories (writing it as '.*' doesn't seem to work, that excludes everything?!)
-            # TODO #13 PORTABILITY: un-hardcode roddy dir
-            File::Find::Rule->name( 'roddyExecutionStore' ), # skip roddy working directories
             File::Find::Rule->name( @prune_dirs )            # skip user-defined directories
           )
           ->exec(sub ($$$) { $log_pruned_dirs += 1; return 1; })
