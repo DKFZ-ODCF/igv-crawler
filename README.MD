@@ -1,24 +1,24 @@
 # IGV Crawler
 
-This script can crawl filesystems for bioinformatics files that are viewable in [IGV](https://www.broadinstitute.org/software/igv/).
+This script can crawl filesystems for bioinformatics files that are viewable in the Broad institute's **Integrative Genome Viewer** ([IGV](https://www.broadinstitute.org/software/igv/)).
 Found files are grouped by a user-definable regular expression and displayed in a single HTML report. This report uses IGV's 
 [HTML remote control capabilities](http://software.broadinstitute.org/software/igv/ControlIGV) and its ability to open files from 
-URLs to offer one-click loading of all found files.
+URLs to offer one-click loading of all discovered files.
 
 ## Use-cases
 I wrote this because at the DKFZ we have a few _peta_bytes worth of genomics data, spread accross hundreds of projects, and 
 structured in deeply nested folder hierarchies. Mounting these petabytes on the desktop machines is frowned upon for 
-security reasons, and even then, navigating the dozens of folders each time you want to add a track becomes extremely tedious.
+security reasons, and even then, navigating the dozens of folders each time you want to add a track quickly becomes tedious.
 
-This crawler generates an overview (thus saving you from tediousness) and offers the files over URL (thus centralizing the filesystem access to a single, well protected server, instead of dozens of facebook-surfing, ad-loading, email-attachment-clicking desktops).
+This crawler generates an overview (thus saving you from tediousness) and offers the files over URL (thus centralizing the filesystem access to a single, well protected server, instead of dozens of web-surfing, ad-loading, email-attachment-clicking desktops).
 
-Even so, I've written the crawler generic enough that it can search local disks of your laptop as easily as petabyte network mounts, and will also work with URLs to the local filesystem (`FILE:\\` urls).
+Even so, I've written the crawler generic enough that it can search local disks of your laptop as easily as petabyte network mounts, and will also work with URLs to the local filesystem (`file://` urls).
 
 
 ## License and contribution
 
 The script and all related example code is licensed under the MIT license.
-Unless specifically stated otherwise, all contributions intentionally submitted to this project will be governed by this same license.
+Unless specifically stated otherwise, all contributions intentionally submitted by you, to this project will be governed by this same license.
 
 IGV itself is also governed by MIT, so this should impose no extra licensing headaches for you.
 
