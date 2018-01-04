@@ -1,0 +1,158 @@
+#########################################################################################################
+# General settings common to all IGV-linker pages (in this case: all in the webroot directory)
+#  - Allow apache to autogenerate a listing of everything
+#  - Common settings for LDAP connection
+<Directory "/YOUR-WEBROOT">
+    # allow listing the overview directory, passwords will be requested for protected subdirs
+    Options Indexes FollowSymLinks
+    
+    # Access Cascade part 0:
+    #   webroot is publicly listable
+    Order allow,deny
+    Allow from all
+
+    # shared config for AD, so we don't have to repeat it for each subdir.
+    # it will be inherited by every directory under the webroot.
+    AuthName "shown to user in passwd dialog"
+    AuthType Basic
+    AuthBasicProvider ldap
+    AuthLDAPURL ldap://ad.example.com:3268/dc=ad,dc=example,dc=com?sAMAccountName?sub
+    AuthLDAPBindDN cn=ldap,cn=Users,dc=ad,dc=example,dc=com
+    AuthLDAPBindPassword very-secret-ldap-server-password
+    AuthzLDAPAuthoritative on
+
+    # note-to-self: you can't mix require-statements here and in subfolders.
+
+
+    # Header options: we rely on the default automatically generated index to provide
+    # an overview of all projects. These settings make that generated overview look slightly less intidimating
+    #
+    # header.html contains a partial HTML page, that will be rendered above the auto-generated index list
+    HeaderName header.html
+    # hide some columns in the overview with little value to biologists.
+    IndexOptions  +SuppressDescription +SuppressSize +FoldersFirst
+    # activate this if your header.html also contains the DocType and HTML <head> section
+    # IndexOptions +SuppressHTMLPreamble
+</Directory>
+
+
+
+#########################################################################################################
+# Access Cascade part 1: Safety-by-Default: block any and all subfolders
+#
+# Most project folders have tight access restrictions, but the inherited setting
+# from the parent dir is "everything wide open".
+# This section restricts ALL access of ALL subfolders, which can then 
+# _selectively_ be overriden with project-specific permissions.
+# This ensures that newly created folders have a safe default, rather than
+# accidentally leaking (human?) genome data.
+#
+# CAREFUL: This overriding cascade is very sensitive to the order of items in this file!
+#  Last matching item wins, so only declare specific folders BELOW this section.
+<Directory "/YOUR-WEBROOT/*">
+    Deny From all
+    # also inform the user what went wrong, if they ever stumble on it
+    #   explicitly mention the server admin, so the user knows they are not at fault.
+    ErrorDocument 403 "Access permissions for this folder were not yet configured by the server admin"
+</Directory>
+
+
+
+############################################################
+# cascade part 2: re-allow certain top-level public folders:
+############################################################
+
+# favicon should be available to everyone who can see the index
+<Directory "/YOUR-WEBROOT/favicon.ico">
+    Allow from all
+</Directory>
+
+# Public data is public
+<Directory "/YOUR-WEBROOT/public">
+    Allow from all
+</Directory>
+
+# Sort some protected pages into an (unprotected) subdir.
+# This is basically a nested repeat of the webroot case.
+# subdirs "top" level is open
+<Directory "/YOUR-WEBROOT/SUB-PROJECT-CONTAINER">
+    Allow from all
+</Directory>
+# subdirs sublevels restricted by default, selectively opened below the marker
+<Directory "/YOUR-WEBROOT/SUB-PROJECT-CONTAINER/*">
+    Deny From all
+    ErrorDocument 403 "Access permissions for this SUB-PROJECT-CONTAINER folder were not yet configured by the server admin"
+</Directory>
+
+
+
+#########################################################################################################
+# Macro definitions
+#
+# These macros extract the common boiler-plate to set up ldap restrictions/permissions on a folder
+# This requires mod_macro, which is built-in in apache 2.4 series (and can be manually compiled for 2.2)
+#
+# Deduplicating the boilerplate reduces the size of the config file, and makes mistakes (such as mismatched project<->AD-group)
+# more obvious due to less clutter.
+#########################################################################################################
+
+# This version shows using a fully qualified LDAP distinguished name (DN) as a parameter
+<Macro LdapProtectFullDN $path $ldap_fulldn >
+  <Directory "/YOUR-WEBROOT/$path">
+    # deny by default
+    Order deny,allow
+    Deny from all
+
+    # check if supplied credentials match an LDAP group
+    # "memberof:1.2.840.113556.1.4.1941:" is an AD-specific LDAP-filter command to _recursively_ resolve (nested) group membership
+    #   ActiveDirectory can resolve this on the AD-server side.
+    #   see https://serverfault.com/questions/269344/how-to-authenticate-users-in-nested-groups-in-apache-ldap
+    require ldap-filter memberof:1.2.840.113556.1.4.1941:=CN=$ldap_fulldn
+
+    Satisfy any
+  </Directory>
+</Macro>
+
+# modified macro definition
+# If most of your used access groups are in the same part of the LDAP hierarchy, 
+# you can extract the repeated parts into the macro, for shorter invocations below.
+<Macro LdapProtectCommonDN $path $ldap_group >
+  <Directory "/YOUR-WEBROOT/$path">
+    # deny by default
+    Order deny,allow
+    Deny from all
+
+    # in this version of the macro, most of the DN (",OU=COMMON-DEPARTMENT,...") is pre-filled, because it is always the same
+    # this means invocations of the macro need to repeat less
+    require ldap-filter memberof:1.2.840.113556.1.4.1941:=CN=$ldap_group,OU=COMMON-DEPARTMENT,OU=COMMON-INSTITUTE,OU=USERS,dc=ad,dc=example,dc=com
+
+    Satisfy any
+  </Directory>
+</Macro>
+
+# End Macro definitions
+#########################################################################################################
+
+
+
+##############################################################
+# Access Cascade part 3: individual projects:
+# Project configurations go BELOW here
+#
+#  CAREFUL: putting projects anywhere else than here, breaks 
+# the subtle cascade of allow/disallows and thus risks 
+# accidentaly leaking sensitive data.
+##############################################################
+
+# "Use" the macros we defined above
+# - The first parameter is the filesystem folder to protect, relative to YOUR-WEBROOT/
+# - The second parameter is the LDAP/AD group that should be granted access
+# Note how full DNs are quite verbose...
+Use LdapProtectFullDN webroot-subdir-A LDAP-GROUP-A,OU=SOME-DEPARTMENT,OU=SOME-INSTITUTE,OU=USERS,dc=ad,dc=example,dc=com
+
+# macro invocations for the groups in the common part of the hierarchy can be a lot shorter:
+Use LdapProtectCommonDN webroot-subdir-B LDAP-GROUP-B
+Use LdapProtectCommonDN webroot-subdir-B LDAP-GROUP-C
+# Note the mismatch! ------------------^------------^
+
+

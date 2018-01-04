@@ -1,0 +1,43 @@
+#########################################################################
+#
+# EXAMPLE SETTINGS FOR IGVCRAWLER
+# In this file, we hold all the site/server-specific settings for 
+# an apache setup. i.e. those settings which interact with the
+# hosting environment, not the project data to visualise.
+#
+# This example demonstrates settings for when the report will be viewed
+# as a file on (local) disk. So, no server setup, and only files accessible
+# in the current computer's filesystem, via FILE:// URLs
+
+
+
+# The local filesystem directory where we'll put our reports
+# The IGV-crawler will create subdirs in it named `lc $project_name`
+#   (NB: this dir MUST NOT have trailing slash!)
+host_base_dir: "/home/YOUR-USER/igvcrawler"
+
+# The URL for 'host_base_dir'
+# In this case, we use local filesystem URLs
+#   (NB: MUST NOT have trailing slash)
+#   (NB2: note triple slash: two from "file://" protocol, 
+#    one from linux root folder "/")
+www_base_url:  "file:///home/YOUR-USER/igvcrawler"
+
+# Directory where the crawler will write it's crawling reports and statistics
+log_dir: "/home/YOUR-USER/igvcrawler/logs"
+
+# contact email adress, printed in the header of each project page.
+# recommended to have the server admin, or whoever makes the project configs, here
+contact_email: 'you@example.com'
+
+# subdirectory name, for both file-system and URL, wherein we store
+# each project's symlinks to the actual data files.
+# (shouldn't need changing)
+link_dir: "links"
+
+# The filename of the generated project page.
+# We recommend to have the default directory-pagename of the server here, "index.html".
+# Doing so means that opening a project directory directly opens the crawled, clickable page,
+# instead of a (generated) directory listing, which would leak internal details.
+# (shouldn't need changing)
+page_name: "index.html"
