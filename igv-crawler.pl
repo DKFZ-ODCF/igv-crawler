@@ -747,29 +747,11 @@ sub printReport () {
 }
 
 
-sub printShortReport () {
-  print "total files scanned (excl. unreadable): " .        $log_total_files_scanned    . "\n" .
-        "total groups displayed:                 " .        $log_total_groups_displayed . "\n" .
-        "total files displayed:                  " .        $log_total_files_displayed  . "\n" .
-        "deepest directory scanned:              " .        $log_deepest_scan_depth     . "\n" .
-        "deepest file found:                     " .        $log_deepest_find_depth     . "\n" .
-        "shallowest file found:                  " .        $log_shallowest_find_depth  . "\n" .
-        "ignored files:                          " .        $log_ignored_files          . "\n" .
-        "pruned directories:                     " .        $log_pruned_dirs            . "\n" .
-        "ungroupable paths:                      " . scalar @log_ungroupable_paths      . "\n" .
-        "files skipped for missing index:        " . scalar @log_files_without_indices  . "\n" .
-        "symlink clashes:                        " . scalar @log_symlink_clashes        . "\n" .
-        "unreadable files:                       " . scalar @log_unreadable_paths       . "\n" .
-        "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S", $log_last_modification_time) . "\n";
-
-  print "unparseable paths:                      " . scalar @log_undisplayable_paths    . "\n" if $display_mode eq 'regex';
-}
-
-
-sub printLongReport ($) {
+sub printReportCommon ($) {
   my ($fh) = @_;
 
-  print $fh "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
+  print $fh
+            "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
             "total groups displayed:                 $log_total_groups_displayed\n" .
             "total files displayed:                  $log_total_files_displayed\n".
             "deepest directory scanned (from / ):    $log_deepest_scan_depth\n" .
@@ -779,10 +761,30 @@ sub printLongReport ($) {
             "pruned directories:                     $log_pruned_dirs\n" .
             "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S", $log_last_modification_time) . "\n";
 
+}
+
+
+sub printShortReport () {
+
+  printReportCommon(*STDOUT);
+
+  print "ungroupable paths:                      " . scalar @log_ungroupable_paths      . "\n" .
+        "files without index:                    " . scalar @log_files_without_indices  . "\n" .
+        "symlink clashes:                        " . scalar @log_symlink_clashes        . "\n" .
+        "unreadable paths:                       " . scalar @log_unreadable_paths       . "\n";
+
+  print "unparseable paths:                      " . scalar @log_undisplayable_paths    . "\n" if $display_mode eq 'regex';
+}
+
+
+sub printLongReport ($) {
+  my ($fh) = @_;
+
+  printReportCommon($fh);
+
   printWithHeader($fh, "ungroupable paths",      \@log_ungroupable_paths);
   printWithHeader($fh, "files without index",    \@log_files_without_indices);
   printWithHeader($fh, "symlink name clashes",   \@log_symlink_clashes);
-
   printWithHeader($fh, "unreadable paths",       \@log_unreadable_paths);
 
   my @parsed_unreadable_summary = map {
@@ -790,9 +792,9 @@ sub printLongReport ($) {
          sprintf("%-25s % 4d", ($_ . ':'), $log_unreadable_summary{$_})
          : ()
   } keys %log_unreadable_summary;
-  printWithHeader($fh, "Recurring unreadable subdirectories", \@parsed_unreadable_summary);
+  printWithHeader($fh, "recurring unreadable subdirectories", \@parsed_unreadable_summary);
 
-  printWithHeader($fh, "Unparseable paths",      \@log_undisplayable_paths) if $display_mode eq 'regex';
+  printWithHeader($fh, "unparseable paths",      \@log_undisplayable_paths) if $display_mode eq 'regex';
 }
 
 
