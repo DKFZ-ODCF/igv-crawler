@@ -29,6 +29,7 @@ IGV itself is also governed by MIT, so this should impose no extra licensing hea
 The crawler script itself is written in strict-mode Perl5 using the following modules:
 
 - Date::Format;
+- DateTime;
 - File::stat;
 - File::Find::Rule;
 - File::Path;
