@@ -38,6 +38,7 @@ use warnings;
 use 5.010;
 
 use Date::Format;
+use DateTime;
 use File::stat;
 use File::Find::Rule;
 use File::Path;
@@ -750,8 +751,10 @@ sub printReport () {
 sub printReportCommon ($) {
   my ($fh) = @_;
 
-  print $fh
-            "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
+  my $now  = DateTime->now;
+  my $last_mod = DateTime->from_epoch( epoch => $log_last_modification_time);
+
+  print $fh "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
             "total groups displayed:                 $log_total_groups_displayed\n" .
             "total files displayed:                  $log_total_files_displayed\n".
             "deepest directory scanned (from / ):    $log_deepest_scan_depth\n" .
@@ -759,8 +762,9 @@ sub printReportCommon ($) {
             "shallowest file found     (from / ):    $log_shallowest_find_depth\n" .
             "ignored files:                          $log_ignored_files\n" .
             "pruned directories:                     $log_pruned_dirs\n" .
-            "most recently changed file in index:    " . time2str("%Y-%m-%d %H:%M:%S", $log_last_modification_time) . "\n";
-
+            "most recently changed file in index:    "
+                . $last_mod->strftime("%Y-%m-%d %H:%M:%S")
+                . " ( ~" . $now->delta_days($last_mod)->in_units('days') . " days old)\n";
 }
 
 
