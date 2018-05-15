@@ -974,7 +974,7 @@ if you have questions, please contact <a href="mailto:odcf-support@dkfz-heidelbe
 <!-- Right-hanging menu: has quick-links to each group header below -->
 <div id="group-menu" style="
   position: fixed;
-  top: 5px;
+  top: 4.2em;
   bottom: 5px;
   right: 0px;
   font-size: small;
