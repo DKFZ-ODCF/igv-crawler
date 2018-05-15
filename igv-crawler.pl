@@ -887,24 +887,20 @@ __DATA__
       this_link.innerHTML="[less]"
     }
 
-    console.log("doing the script!");
+    // pre-shrink the warning on-load, if the user has previously minimised it.
     window.onload = function(event) {
-      console.log("onload");
-
       shrunk = localStorage.getItem(key);
       if (shrunk=='shrunk') {
         shrink();
-        console.log('pre-shrinking');
       }
-
     }
   </script>
 
 
 <div id="migration-warning"
-><h3 style="margin-top: 2px; text-align: center;">We are moving soon</h3>
+><h3 style="margin-top: 2px; text-align: center;">This page is moving Monday, june 4th</h3>
 <p>
-Due to tighter restrictions on data access from "outside" the DKFZ, this IGV-linker page will move to DKFZ intranet/VPN-only soon.
+Due to tighter restrictions on data access from "outside" the DKFZ, this IGV-linker page will move to DKFZ intranet/VPN-only starting Monday, june 4th.
 </p>
 <p>
 In light of the new DKFZ data protection plan ("Rahmendatenschutzkonzept"), we have determined that direct access to practically all our highly sensitive genome data,
