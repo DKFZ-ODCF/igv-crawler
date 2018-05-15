@@ -845,10 +845,105 @@ __DATA__
     A:visited  { text-decoration: none }
     A:hover    { text-decoration: underline }
     A:active   { text-decoration: underline }
+
+    #migration-warning {
+      position: fixed;
+      padding: 0.5em;
+      z-index: 101;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #fde073;
+      overflow: hidden;
+      -webkit-box-shadow: 0 0 5px black;
+      -moz-box-shadow:    0 0 5px black;
+      box-shadow:         0 0 5px black;
+    }
+    .shrunk {
+      height: 2em;
+    }
+
   --></style>
 
 </head>
 <body style="margin-right: 280px;">
+
+  <script >
+    key = 'igvlinker-migration-warning-shrunk';
+
+    function shrink() {
+    this_link = document.getElementById("migration-warning-toggle");
+    warning_window = document.getElementById("migration-warning");
+      warning_window.classList.add("shrunk");
+      localStorage.setItem(key, "shrunk");
+      this_link.innerHTML="[more]"
+    }
+
+    function expand() {
+    this_link = document.getElementById("migration-warning-toggle");
+    warning_window = document.getElementById("migration-warning");
+      document.getElementById("migration-warning").classList.remove("shrunk");
+      localStorage.setItem(key, "expanded");
+      this_link.innerHTML="[less]"
+    }
+
+    console.log("doing the script!");
+    window.onload = function(event) {
+      console.log("onload");
+
+      shrunk = localStorage.getItem(key);
+      if (shrunk=='shrunk') {
+        shrink();
+        console.log('pre-shrinking');
+      }
+
+    }
+  </script>
+
+
+<div id="migration-warning"
+><h3 style="margin-top: 2px; text-align: center;">We are moving soon</h3>
+<p>
+Due to tighter restrictions on data access from "outside" the DKFZ, this IGV-linker page will move to DKFZ intranet/VPN-only soon.
+</p>
+<p>
+In light of the new DKFZ data protection plan ("Rahmendatenschutzkonzept"), we have determined that direct access to practically all our highly sensitive genome data,
+from the open, untrusted internet,
+with "only" a simple password check, is too big of a security risk.
+The additional restrictions and protections on DKFZ intranet (campus computers) and VPN (external collaborators) will mitigate that risk.
+</p>
+<p>
+To test if you will be affected, please see if you can open DKFZ-intranet pages from your current computer:
+<ul>
+<li>Try to open <a href='https://logaportal3.dkfz-heidelberg.de/maportal' target='blank'>the DKFZ employee portal</a></li>
+<li>If you see the employee portal login page, your current computer is part of the DKFZ intranet, you will have no problems!</li>
+<li>If you get a "server not found" or similar error message, your current computer is outside the DKFZ intranet.<br/>
+You will need to use VPN access in the future; please see the <a href='https://itcfwiki.inet.dkfz-heidelberg.de/itcfwiki/index.php/VPN-Details/en'>ITCF wiki</a> (ironically, intranet-only) for more details on DKFZ VPN access.</li>
+</ul>
+Don't forget to test <em>every</em> computer from which you regularly use this service!
+</p>
+<p>
+if you have questions, please contact <a href="mailto:odcf-support@dkfz-heidelberg.de?subject=IGV-linker intranet migration">odcf-support@dkfz-heidelberg.de</a>
+</p>
+<div style="
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin-bottom: 2px;
+">
+  <a id='migration-warning-toggle'
+    onclick='
+      shrunk = localStorage.getItem(key);
+      if (shrunk == "shrunk") {
+        expand();
+      } else {
+        shrink();
+      }'
+  >[less]</a>
+</div>
+</div>
+
+<div id='warning-spacer' class='shrunk'>&nbsp;</div>
 
 <h1 id="page-title"><!-- TMPL_VAR NAME=project_name --> IGV linker</h1>
 
