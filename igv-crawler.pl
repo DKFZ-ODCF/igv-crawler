@@ -853,7 +853,7 @@ __DATA__
       top: 0;
       left: 0;
       right: 0;
-      background: #fde073;
+      background: #ADFF2F;
       overflow: hidden;
       -webkit-box-shadow: 0 0 5px black;
       -moz-box-shadow:    0 0 5px black;
@@ -898,9 +898,9 @@ __DATA__
 
 
 <div id="migration-warning"
-><h3 style="margin-top: 2px; text-align: center;">This page is moving Monday, june 4th</h3>
+><h3 style="margin-top: 2px; text-align: center;">Move successful!</h3>
 <p>
-Due to tighter restrictions on data access from "outside" the DKFZ, this IGV-linker page will move to DKFZ intranet/VPN-only starting Monday, june 4th.
+If you see this, the move to intranet-only was completed successfully!
 </p>
 <p>
 In light of the new DKFZ data protection plan ("Rahmendatenschutzkonzept"), we have determined that direct access to practically all our highly sensitive genome data,
@@ -908,16 +908,8 @@ from the open, untrusted internet,
 with "only" a simple password check, is too big of a security risk.
 The additional restrictions and protections on DKFZ intranet (campus computers) and VPN (external collaborators) will mitigate that risk.
 </p>
-<p>
-To test if you will be affected, please see if you can open DKFZ-intranet pages from your current computer:
-<ul>
-<li>Try to open <a href='https://logaportal3.dkfz-heidelberg.de/maportal' target='blank'>the DKFZ employee portal</a></li>
-<li>If you see the employee portal login page, your current computer is part of the DKFZ intranet, you will have no problems!</li>
-<li>If you get a "server not found" or similar error message, your current computer is outside the DKFZ intranet.<br/>
-You will need to use VPN access in the future; please see the <a href='https://itcfwiki.inet.dkfz-heidelberg.de/itcfwiki/index.php/VPN-Details/en'>ITCF wiki</a> (ironically, intranet-only) for more details on DKFZ VPN access.</li>
+For access from the outside (e.g. from home), you will need to use VPN access in the future; please see the <a href='https://itcfwiki.inet.dkfz-heidelberg.de/itcfwiki/index.php/VPN-Details/en'>ITCF wiki</a> (ironically, intranet-only) for more details on DKFZ VPN access.</li>
 </ul>
-Don't forget to test <em>every</em> computer from which you regularly use this service!
-</p>
 <p>
 if you have questions, please contact <a href="mailto:odcf-support@dkfz-heidelberg.de?subject=IGV-linker intranet migration">odcf-support@dkfz-heidelberg.de</a>
 </p>
