@@ -79,6 +79,7 @@ die "ERROR: specified 'host_base_dir' does not exist: $siteconfig{'host_base_dir
 my $project_name = 'demo';        # defaults to demo-settings, to not-break prod when someone forgets to specify
 my @scan_dirs;                    # list of directories that will be scanned, human readable
 my @globbed_scan_dirs;            # list of directories that will be scanned, fully shell-expanded version
+my %scan_dir_expansion_sizes;     # hash: to how many real directories do the globs expand?
 my @prune_dirs;                   # list of sub-directories inside @scan_dirs that will not be descended into. Can be shell globs, but not over directories. i.e. '*foo' works, 'foo/subsegment*' doesn't
 my @prune_files;                  # list of globs of filenames to ignore
 my $grouping_regex;               # every file-path is run through this regex to group it with related paths (pattern to group by MUST be first capture group)
@@ -216,6 +217,7 @@ sub parseArgs () {
     # expand the current dir, but keep only directories
     my @globbed = bsd_glob($dir);
     push @globbed_scan_dirs, @globbed;
+    $scan_dir_expansion_sizes{$dir} = scalar @globbed;
   }
 
   @prune_dirs  = split(',', join(',', @prune_dirs));
@@ -257,7 +259,7 @@ sub crawl () {
   my $start = time();
 
   print "\n" . time2str("%Y-%m-%d %H:%M:%S", $start) . " - Scanning $project_name for IGV-relevant files in:\n";
-  print "  $_\n" for @scan_dirs;
+  print "  $_ (expands to ${scan_dir_expansion_sizes{$_}} entries)\n" for @scan_dirs;
 
   my $rule = (
     File::Find::Rule->new
