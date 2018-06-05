@@ -406,8 +406,9 @@ sub clearOldLinksIn ($) {
   # delete all symlinks in our directory
   system( "find -P '$dir_to_clear' -mount -depth -type l  -delete" );
   # clear out all directories that are now empty (or contain only empty directories -> '-p')
-  # pipe to /dev/null because this way (-p: delete recursively-empty dirs in one go) produces a lot of "subdir X no longer exists"-type warnings
-  system( "find -P '$dir_to_clear' -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
+  # - pipe to /dev/null because this way (-p: delete recursively-empty dirs in one go) produces a lot of "subdir X no longer exists"-type warnings
+  # - we scan dir_to_clear/* to make sure we don't accidentally delete the $dir_to_clear itself, in case it is empty
+  system( "find -P '$dir_to_clear/*' -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
 
   print "\t(took " . (time() - $start) . " seconds)\n";
 }
