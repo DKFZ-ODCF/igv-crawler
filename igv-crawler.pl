@@ -737,6 +737,12 @@ sub printReport () {
   }
 
   # .. and also log (always long-form) to a file
+  # ensure the log-dir exists:
+  if (! -d $siteconfig{'log_dir'}) {
+    if (! mkdir $siteconfig{'log_dir'}) {
+      warn "couldn't create log directory '$siteconfig{'log_dir'}'";
+    }
+  }
   # make sure we don't need subdirs in the log-dir (project names may contain slashes to create reports in subdirs)
   (my $safe_project_name = $project_name) =~ s/\//_/;
   my $log_file = catfile($siteconfig{'log_dir'}, $safe_project_name . ".log");
