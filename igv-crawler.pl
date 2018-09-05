@@ -54,7 +54,7 @@ use Config::Simple;
 #
 my $siteconfig_file = 'igvcrawler-siteconfig.ini';
 my %siteconfig = ();
-die "ABORTING: could not load site-specific configuration file '$siteconfig_file'" if not -e $siteconfig_file;
+die "ERROR: could not load site-specific configuration file '$siteconfig_file'" if not -e $siteconfig_file;
 Config::Simple->import_from($siteconfig_file, \%siteconfig);
 # Sanity checks: all expected values should be defined
 
@@ -170,14 +170,14 @@ sub parseArgs () {
               'report=s'    => \$report_mode,    # what to report at end-of-execution: "counts" or "full"
               'followlinks' => \$follow_symlinks # flag, follow symlinks or not?
              )
-  or die("Error parsing command line arguments");
+  or die("ERROR: missing command line arguments");
 
   # sanity check: project name?
-  die 'No project name specified, aborting!' if ($project_name eq '');
+  die 'ERROR: No project name specified!' if ($project_name eq '');
 
   # sanity check: grouping regex
-  die "Didn't specifify groupregex, cannot extract grouping label from file paths, aborting!" if ($grouping_regex eq "");
-  die "groupregex should contain at least one capture group" if (index($grouping_regex, '(') == -1);
+  die "ERROR: Didn't specifify groupregex, cannot extract grouping label from file paths,!" if ($grouping_regex eq "");
+  die "ERROR: groupregex should contain at least one capture group" if (index($grouping_regex, '(') == -1);
   # fail-fast: see if it compiles (otherwise it will only fail after we've crawled the disk -> time wasting)
   "" =~ /$grouping_regex/x;
 
@@ -186,20 +186,20 @@ sub parseArgs () {
     $display_mode = 'regex';
     $display_regex = $1;
     if (index($display_regex, '(') == -1) {   # yes, a crafty user could fool this with (?:), but then you're intentionally messing it up
-      die "display-mode regex must contain at least one capture group to display";
+      die "ERROR: display-mode regex must contain at least one capture group to display";
     }
     eval {
       $display_regex = qr/$display_regex/x; # precompile regex
     } or do {
-      die "error encountered while parsing display-mode regex:\n$@";
+      die "ERROR: problem encountered while parsing display-mode regex:\n$@";
     };
   } elsif ($display_mode ne 'nameonly' and
            $display_mode ne 'fullpath') {
-    die "display mode not recognised, use either \"nameonly\", \"fullpath\" or \"regex=SOMEREGEX\"";
+    die "ERROR: display mode not recognised, use either \"nameonly\", \"fullpath\" or \"regex=SOMEREGEX\"";
   }
 
   # sanity check: report_mode
-  die "invalid report mode specified: $report_mode, use either 'counts' or 'full'" unless ( $report_mode eq "counts" or $report_mode eq "full");
+  die "ERROR: invalid report mode specified: $report_mode, use either 'counts' or 'full'" unless ( $report_mode eq "counts" or $report_mode eq "full");
 
   # canonicalize + sanity check @scandirs
   #
@@ -209,7 +209,7 @@ sub parseArgs () {
   # 2) single command line arg with commas: "--scandir /dir/a,/dir/b"
   #    --> split all strings
 #  @scan_dirs = split(',', join(',', @scan_dirs));
-  die 'Specified no directories to scan, aborting!' if ((scalar @scan_dirs) == 0);
+  die 'ERROR: Specified no directories to scan, aborting!' if ((scalar @scan_dirs) == 0);
 
   # glob-expand the scan-dirs, to find the actual dirs, instead of the user-convenient
   # shell globs, such as "my-project/all-samples/*/alignment"
@@ -732,7 +732,7 @@ sub writeContentsToFile ($$) {
   my ($contents, $filename) = @_;
 
   print "writing contents to   $filename";
-  open (FILE, "> $filename") or die "problem opening $filename\n";
+  open (FILE, "> $filename") or die "ERROR: problem opening $filename\n";
   print FILE $contents;
   close (FILE);
 }
