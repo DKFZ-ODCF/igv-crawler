@@ -873,33 +873,32 @@ __DATA__
 
 <p id="introduction">
   The IGV-relevant files for the <!-- TMPL_VAR NAME=project_name --> project have been made available online here over a secured connection.<br/>
-  Below are some clickable links that will add said files into a running IGV session.<br/>
-  Learn more about this functionality at the IGV-website under <a target="blank" href="https://www.broadinstitute.org/software/igv/ControlIGV">controlling IGV</a>
+  Below are some clickable links that will load said files into a running IGV session using IGV's remote control functionality. To learn more about how this
+  works, please see the IGV homepage under <a target="blank" href="https://www.broadinstitute.org/software/igv/ControlIGV">controlling IGV</a>.
 </p>
 
 <p id="igv-instructions">
   <strong>NOTE! the links below only work if</strong>
   <ol>
     <li>IGV is already <a href="https://software.broadinstitute.org/software/igv/download/">installed</a> and running on your LOCAL computer</li>
-    <li>you enabled port-control (in view > preferences > advanced > enable port > port 60151)</li>
+    <li>you enabled port-control (in view > preferences > advanced > enable port > port 60151, activated by default)</li>
     <li>you have the correct reference genome loaded before clicking the link.<br/>
       (do this before loading files, or all positions will show up as mutated)<br/>
-      to add missing genomes to IGV, see menu > genomes > load genome from server<br/>
+      to add missing genomes to IGV, see menu > genomes > load genome from server<br/></li>
   </ol>
 </p>
 
 <p id="about-blurb"><small>
-  IGV-linker v2.0, a service by the eilslabs data management group<br/>
-  questions, wishes, improvements or suggestions: <a href="mailto:<!-- TMPL_VAR NAME=contact_email -->"><!-- TMPL_VAR NAME=contact_email --></a><br/>
-  powered by <a href="http://www.threepanelsoul.com/comic/on-perl">readable perl&trade;</a><br/>
-  last updated: <!-- TMPL_VAR NAME=timestamp --><br/>
-  generated from files found in:
+  IGV Crawler v2.0, an <a href="https://github.com/DKFZ-ODCF/igv-crawler">open source tool</a> by the DKFZ Omics IT & Datamanagement Core Facility<br/>
+  This instance is maintained by: <a href="mailto:<!-- TMPL_VAR NAME=contact_email -->"><!-- TMPL_VAR NAME=contact_email --></a><br/>
+  This report was generated from files found in:
   <ul><!-- TMPL_LOOP NAME=scandirs -->
     <li><!-- TMPL_VAR NAME=dir --></li><!-- /TMPL_LOOP -->
   </ul>
+  last update: <!-- TMPL_VAR NAME=timestamp --><br/>
 </small></p>
 
-<!-- Right-hanging menu: has quick-links to each group header below -->
+<!-- Right-hanging menu: has quick-links to each group header -->
 <div id="group-menu" style="
   position: fixed;
   top: 5px;
@@ -929,7 +928,7 @@ Jump to:
   </ul>
 <!-- /TMPL_LOOP -->
 <hr>
-<p><small>The end, thank you for reading!</small></p>
+<p><small>The end, thank you for reading!<br/>powered by <a href="http://www.threepanelsoul.com/comic/on-perl">readable perl&trade;</a><br/></small></p>
 </body>
 </html>
 

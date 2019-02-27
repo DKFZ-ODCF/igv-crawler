@@ -53,7 +53,7 @@
     Deny From all
     # also inform the user what went wrong, if they ever stumble on it
     #   explicitly mention the server admin, so the user knows they are not at fault.
-    ErrorDocument 403 "Access permissions for this folder were not yet configured by the server admin"
+    ErrorDocument 403 "Access permissions for this folder were not yet configured by the server admin."
 </Directory>
 
 
