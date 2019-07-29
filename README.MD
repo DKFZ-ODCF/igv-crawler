@@ -98,4 +98,4 @@ Only during the few seconds where the symlinks are replaced and the HTML file is
 
 # Help improve this project by opening issues!
 I intend to keep improving this service for the foreseeable future, and "usefulness to others" is a factor I wish to improve.
-Asking questions is a way to help make this project better, so go ahead and [file an issue](issues/new)!
+Asking questions is a way to help make this project better, so go ahead and [file an issue](https://github.com/DKFZ-ODCF/igv-crawler/issues/new)!
