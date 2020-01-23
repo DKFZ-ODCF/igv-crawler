@@ -848,15 +848,51 @@ __DATA__
 <head>
   <title><!-- TMPL_VAR NAME=project_name --> IGV linker</title>
   <style type="text/css" media="screen"><!--
-    /* visual separation of groups */
-    H2  {
-      background: lightgray;
-      margin-top:    1.2em;
-      margin-bottom:   0em;
+    BODY {
+      margin: 0em;
     }
+
+    #main {
+      margin-left: 0.5em;
+      margin-right: 17em; /* make space for #group-menu */
+    }
+
+    #group-menu {
+      position: fixed;
+      top: 5px;
+      bottom: 5px;
+      right: 0px;
+      font-size: small;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 4px 28px 4px 6px;
+      background-color: white;
+      border: 1px solid black;
+      border-right: none;
+      border-bottom-left-radius: 7px;
+      border-top-left-radius: 7px;
+      white-space: nowrap;
+    }
+
+    H1 {
+      background: #0047b9; /* DKFZ-blue, HSL(217, 100%, 36%) */
+      color: white;
+      text-align: center;
+      padding: 0.2em;
+    }
+
+    H2 {
+      background: #cce0ff;  /* lightened DKFZ-blue, HSL(216, 100%, 90%) */
+      margin-top:    1.2em; /* visually separate groups */
+      margin-bottom: 0em;
+      padding:       0.15em;
+      padding-left:  0.4em;
+      border-radius: 0.2em;
+    }
+
     UL {
-      margin-top: 0.7em;   /* draw group-links closer to their heading */
-      padding-left: 1.6em; /* reduce indent of bullet points */
+      margin-top: 0.5em; /* draw group-links closer to their heading for coherence */
+      padding-left: 2em; /* slightly reduce indent of bullet points to maximise space for long links */
     }
 
     /* reduce visual clutter of links, otherwise 90% of the page is underlined */
@@ -867,10 +903,18 @@ __DATA__
   --></style>
 
 </head>
-<body style="margin-right: 280px;">
-
+<body>
 <h1 id="page-title"><!-- TMPL_VAR NAME=project_name --> IGV linker</h1>
 
+<!-- Right-hanging menu: has quick-links to each group header -->
+<div id="group-menu">
+Jump to:
+<ul><!-- TMPL_LOOP NAME=groups -->
+  <li><a href="#<!-- TMPL_VAR NAME=group_id -->"><!-- TMPL_VAR NAME=group_id --></a></li><!-- /TMPL_LOOP --></ul>
+</div>
+
+<!-- main content section -->
+<div id="main">
 <p id="introduction">
   The IGV-relevant files for the <!-- TMPL_VAR NAME=project_name --> project have been made available online here over a secured connection.<br/>
   Below are some clickable links that will load said files into a running IGV session using IGV's remote control functionality. To learn more about how this
@@ -898,37 +942,20 @@ __DATA__
   last update: <!-- TMPL_VAR NAME=timestamp --><br/>
 </small></p>
 
-<!-- Right-hanging menu: has quick-links to each group header -->
-<div id="group-menu" style="
-  position: fixed;
-  top: 5px;
-  bottom: 5px;
-  right: 0px;
-  font-size: small;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 4px 28px 4px 6px;
-  background-color: white;
-  border: 1px solid black;
-  border-right: none;
-  border-bottom-left-radius: 7px;
-  border-top-left-radius: 7px;
-  white-space: nowrap;
-">
-Jump to:
-<ul><!-- TMPL_LOOP NAME=groups -->
-  <li><a href="#<!-- TMPL_VAR NAME=group_id -->"><!-- TMPL_VAR NAME=group_id --></a></li><!-- /TMPL_LOOP --></ul>
-</div>
+<hr>
 
-<h1>IGV files</h1>
+<!-- start of actual file links -->
 <!-- TMPL_LOOP NAME=groups -->
   <h2 id="<!-- TMPL_VAR NAME=group_id -->"><!-- TMPL_VAR NAME=group_id --></h2>
   <ul class="files"><!-- TMPL_LOOP NAME=linked_files -->
     <li><a href="http://localhost:60151/load?file=<!-- TMPL_VAR NAME=file_host_dir -->/<!-- TMPL_VAR NAME=diskfilename -->"><!-- TMPL_VAR NAME=displayfilename --></a></li><!-- /TMPL_LOOP -->
   </ul>
 <!-- /TMPL_LOOP -->
+
 <hr>
 <p><small>The end, thank you for reading!<br/>powered by <a href="http://www.threepanelsoul.com/comic/on-perl">readable perl&trade;</a><br/></small></p>
+
+</div> <!-- id=main -->
 </body>
 </html>
 
