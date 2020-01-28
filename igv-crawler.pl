@@ -882,7 +882,7 @@ __DATA__
     }
 
     H2 {
-      background: #cce0ff;  /* lightened DKFZ-blue, HSL(216, 100%, 90%) */
+      background: #b3d0ff;  /* lightened DKFZ-blue, HSL(216, 100%, 85%) */
       margin-top:    1.2em; /* visually separate groups */
       margin-bottom: 0em;
       padding:       0.15em;
