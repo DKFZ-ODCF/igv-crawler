@@ -518,6 +518,17 @@ sub getLinkNameFor ($$) {
   my @path_elems = grep { $_ ne '' } File::Spec->splitdir($parent_dirs); # splitdir produces leading and trailing ''
   my $anti_clash_path = join(".", @path_elems);
 
+  # IGV versions 2.7+ choke on 'special' characters in URLs (but strangely, ONLY URL, not local files..)
+  # These include brackets () and asterisk *.
+  # Sanity seems to keep brackets out of filenames, but not asterisks, so we have to work around that one..
+  # Applying the proper HTML escape sequence ('%2A') results in the same errors.
+  #
+  # As a workaround, we replace the offending asterisk in our link-names with the visually similar
+  # "U+2217 ASTERISK OPERATOR": ∗
+  # IGV accepts that, and the displayed filename looks practically identical.
+  # A hearty thank you to all programmers who implemented Unicode-support in browsers and IGV's shipped Java Runtime!
+  $basename =~ s/\*/∗/g
+
   return catfile($group, $anti_clash_path, $basename);
 }
 
