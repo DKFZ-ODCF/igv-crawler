@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<html>
+ <head>
+  <title>IGV Crawler</title>
+  <link rel='icon' type='image/png' href='/favicon.ico' />
+ </head>
+ <body>
+<h1>IGV Crawler</h1>
+<p>
+Here you will find data stored on the central storage systems, made accessible for IGV in one-click fashion.
+
+This is made possible by the <a href="https://github.com/DKFZ-ODCF/igv-crawler">IGV Crawler opn source tool</a>, which
+combines IGV's "<a href="https://www.broadinstitute.org/software/igv/PortCommands">port control</a>" feature
+with IGV's ability to open from URL
+</p>
+<p>
+Access permissions for the individual projects are handled by the server administrator, reachable at 
+<ul>
+  <li>email: <a href="mailto:TODO_YOUR_EMAIL@EXAMPLE.ORG">TODO_YOUR_EMAIL@EXAMPLE.ORG</a></li>
+  <li>telephone: TODO-YOUR-PHONE</li>
+  <li>office: TODO-OFFICE-NUMBER</li>
+</ul>
+The server administrator is also the person to contact if your project is missing or if you have other questions,
+suggestions or improvements.
+</p>
+<p>
+Each project page has a "last updated" date at the top, showing when it last crawled the filesystem.
+<p id="igv-instructions">
+  <strong>NOTE! the links below only work if</strong>
+  <ol>
+    <li>IGV is already <a href="https://software.broadinstitute.org/software/igv/download/">installed</a> and running on your LOCAL computer</li>
+    <li>you enabled port-control (in view &gt; preferences &gt; advanced &gt; enable port &gt; port 60151, activated by default)</li>
+    <li>you have the correct reference genome loaded before clicking the link.<br>
+      (do this before loading files, or all positions will show up as mutated)<br>
+      to add missing genomes to IGV, see menu &gt; genomes &gt; load genome from server<br></li>
+  </ol>
+  </p>
+</p>

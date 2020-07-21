@@ -1,92 +1,4 @@
 #########################################################################################################
-# General settings common to all IGV-linker pages (in this case: all in the webroot directory)
-#  - Allow apache to autogenerate a listing of everything
-#  - Common settings for LDAP connection
-<Directory "/YOUR-WEBROOT">
-    # allow listing the overview directory, passwords will be requested for protected subdirs
-    Options Indexes FollowSymLinks
-    
-    # Access Cascade part 0:
-    #   webroot is publicly listable
-    Order allow,deny
-    Allow from all
-
-    # shared config for AD, so we don't have to repeat it for each subdir.
-    # it will be inherited by every directory under the webroot.
-    AuthName "shown to user in passwd dialog"
-    AuthType Basic
-    AuthBasicProvider ldap
-    AuthLDAPURL ldap://ad.example.com:3268/dc=ad,dc=example,dc=com?sAMAccountName?sub
-    AuthLDAPBindDN cn=ldap,cn=Users,dc=ad,dc=example,dc=com
-    AuthLDAPBindPassword very-secret-ldap-server-password
-    AuthzLDAPAuthoritative on
-
-    # note-to-self: you can't mix require-statements here and in subfolders.
-
-
-    # Header options: we rely on the default automatically generated index to provide
-    # an overview of all projects. These settings make that generated overview look slightly less intidimating
-    #
-    # header.html contains a partial HTML page, that will be rendered above the auto-generated index list
-    HeaderName header.html
-    # hide some columns in the overview with little value to biologists.
-    IndexOptions  +SuppressDescription +SuppressSize +FoldersFirst
-    # activate this if your header.html also contains the DocType and HTML <head> section
-    # IndexOptions +SuppressHTMLPreamble
-</Directory>
-
-
-
-#########################################################################################################
-# Access Cascade part 1: Safety-by-Default: block any and all subfolders
-#
-# Most project folders have tight access restrictions, but the inherited setting
-# from the parent dir is "everything wide open".
-# This section restricts ALL access of ALL subfolders, which can then 
-# _selectively_ be overriden with project-specific permissions.
-# This ensures that newly created folders have a safe default, rather than
-# accidentally leaking (human?) genome data.
-#
-# CAREFUL: This overriding cascade is very sensitive to the order of items in this file!
-#  Last matching item wins, so only declare specific folders BELOW this section.
-<Directory "/YOUR-WEBROOT/*">
-    Deny From all
-    # also inform the user what went wrong, if they ever stumble on it
-    #   explicitly mention the server admin, so the user knows they are not at fault.
-    ErrorDocument 403 "Access permissions for this folder were not yet configured by the server admin."
-</Directory>
-
-
-
-############################################################
-# cascade part 2: re-allow certain top-level public folders:
-############################################################
-
-# favicon should be available to everyone who can see the index
-<Directory "/YOUR-WEBROOT/favicon.ico">
-    Allow from all
-</Directory>
-
-# Public data is public
-<Directory "/YOUR-WEBROOT/public">
-    Allow from all
-</Directory>
-
-# Sort some protected pages into an (unprotected) subdir.
-# This is basically a nested repeat of the webroot case.
-# subdirs "top" level is open
-<Directory "/YOUR-WEBROOT/SUB-PROJECT-CONTAINER">
-    Allow from all
-</Directory>
-# subdirs sublevels restricted by default, selectively opened below the marker
-<Directory "/YOUR-WEBROOT/SUB-PROJECT-CONTAINER/*">
-    Deny From all
-    ErrorDocument 403 "Access permissions for this SUB-PROJECT-CONTAINER folder were not yet configured by the server admin"
-</Directory>
-
-
-
-#########################################################################################################
 # Macro definitions
 #
 # These macros extract the common boiler-plate to set up ldap restrictions/permissions on a folder
@@ -96,6 +8,7 @@
 # more obvious due to less clutter.
 #########################################################################################################
 
+# Project-protection, verbose paramaters.
 # This version shows using a fully qualified LDAP distinguished name (DN) as a parameter
 <Macro LdapProtectFullDN $path $ldap_fulldn >
   <Directory "/YOUR-WEBROOT/$path">
@@ -113,8 +26,8 @@
   </Directory>
 </Macro>
 
-# modified macro definition
-# If most of your used access groups are in the same part of the LDAP hierarchy, 
+# Project-protection, shortened common LDAP-fragments.
+# If most of your used access groups are in the same part of the LDAP hierarchy,
 # you can extract the repeated parts into the macro, for shorter invocations below.
 <Macro LdapProtectCommonDN $path $ldap_group >
   <Directory "/YOUR-WEBROOT/$path">
@@ -130,13 +43,146 @@
   </Directory>
 </Macro>
 
+# Macro for project groups
+# This opens a folder at cascade level 2, while re-blocking all it's contents at level 3.
+# Effectively, it is a recursive case of the level-0/level-1 situation, without the webroot-specific parts.
+<Macro OpenFolderButBlockChildren $path >
+  # "top" level is open
+  <Directory "/YOUR-WEBROOT/$path">
+    Allow from all
+  </Directory>
+  # sublevels restricted by default, selectively re-opened below the marker
+  <Directory "/YOUR-WEBROOT/$path/*">
+    Deny From all
+    ErrorDocument 403 "Access Forbidden: permissions for this folder were probably not yet configured by the server admin (but it could be other things too, how are your file permissions?)."
+  </Directory>
+</Macro>
+
+
 # End Macro definitions
 #########################################################################################################
 
 
 
+#########################################################################################################
+# Access Cascade level 0
+#
+# General settings common to all IGV-linker pages (in this case: all in the webroot directory)
+#  - Allow apache to autogenerate a listing of everything
+#  - Common settings for LDAP connection
+#  - basic block/allow rules for the top-level
+#
+# This entire example assumes the following folder hierarchy:
+#   YOUR-WEBROOT/
+#   ├ header.html  # doesn't need to be user-accessible, apache will read and parse it automatically.
+#   ├ favicon.ico  # tiny logo for tabs/bookmarks, must be user-accessible.
+#   ├ project-folder-A/
+#   │ ├ links/     # created by crawler
+#   │ └ index.html # created by crawler
+#   ├ project-folder-B/
+#   │ ├ links/
+#   │ └ index.html
+#   ├ project-folder-C/
+#   │ ├ links/
+#   │ └ index.html
+#   ├ PROJECT-GROUP/
+#   │ └ <empty>
+#   └ MACROED-PROJECT-GROUP/
+#     └ project-folder-D/
+#       ├ links/
+#       └ index.html
+
+<Directory "/YOUR-WEBROOT">
+    # Common options for entire folder hierarchy
+    #   Indexes: Allow Apache to generate listing pages of all folder contents
+    #            (unless there is an explicit "index.html" in the folder, as generated by the crawler)
+    #   FollowSymLinks: needed because the crawler relies heavily on symlinks for data compartimentalisation.
+    Options Indexes FollowSymLinks
+    # hide some columns in the overview with little value to biologists.
+    IndexOptions  +SuppressDescription +SuppressSize +FoldersFirst
+
+    # Header options: make the generated overview look slightly less intidimating
+    #
+    # header.html contains a partial HTML page, that will be rendered above the auto-generated index list
+    HeaderName header.html
+    # Activate this if your header.html also contains the DocType and HTML <head> section
+    # (The provided example header does include these.)
+    IndexOptions +SuppressHTMLPreamble
+
+    # webroot is publicly listable
+    Order allow,deny
+    Allow from all
+
+    # shared config for AD, so we don't have to repeat it for each subdir.
+    # it will be inherited by every directory under the webroot.
+    AuthName "shown to user in passwd dialog"
+    AuthType Basic
+    AuthBasicProvider ldap
+    AuthLDAPURL ldap://ad.example.com:3268/dc=ad,dc=example,dc=com?sAMAccountName?sub
+    AuthLDAPBindDN cn=ldap,cn=Users,dc=ad,dc=example,dc=com
+    AuthLDAPBindPassword very-secret-ldap-server-password
+    AuthzLDAPAuthoritative on
+
+    # note-to-self: you can't mix require-statements here and in subfolders.
+</Directory>
+
+
+
+#########################################################################################################
+# Access Cascade level 1: Safety-by-Default, block any and all subfolders/subfiles
+#
+# Most project folders have tight access restrictions, but the inherited setting
+# from the parent dir is "everything wide open".
+# This section restricts ALL access of ALL subfolders, which can then 
+# _selectively_ be overriden with project-specific permissions.
+# This ensures that newly created folders have a safe default, rather than
+# accidentally leaking (human?) genome data.
+#
+# CAREFUL: This overriding cascade is very sensitive to the order of items in this file!
+#  Last matching item wins, so only declare specific folders BELOW this section.
+<Directory "/YOUR-WEBROOT/*">
+    Deny From all
+    # also inform the user what went wrong, if they ever stumble on it
+    #   explicitly mention the server admin, so the user knows they are not at fault.
+    ErrorDocument 403 "Access Forbidden: permissions for this folder were probably not yet configured by the server admin (but it could be other things too, how are your file permissions?)."
+</Directory>
+
+
+
+############################################################
+# Access Cascade level 2: re-allow certain top-level public folders:
+############################################################
+
+# favicon should be available to everyone who can see the index.
+<Directory "/YOUR-WEBROOT/favicon.ico">
+    Allow from all
+</Directory>
+
+# Public data is public
+<Directory "/YOUR-WEBROOT/public">
+    Allow from all
+</Directory>
+
+# Nested subgroups, the long way:
+# Group some protected pages into an (unprotected, browseable) subdir, while reprotecting the child-items
+# This is basically a nested repeat of the webroot case.
+<Directory "/YOUR-WEBROOT/PROJECT-GROUP">
+    Allow from all
+</Directory>
+# subdirs sublevels restricted by default, selectively opened below the marker
+<Directory "/YOUR-WEBROOT/PROJECT-GROUP/*">
+    Deny From all
+    ErrorDocument 403 "Access Forbidden: permissions for this folder were probably not yet configured by the server admin (but it could be other things too, how are your file permissions?)."
+</Directory>
+
+# Nested subgroups, the short macro way:
+# Group some protected pages into an (unprotected) subdir, while reprotecting the child-items
+Use OpenFolderButBlockChildren MACROED-PROJECT-GROUP
+
+
+
 ##############################################################
-# Access Cascade part 3: individual projects:
+# Access Cascade level 3: individual projects:
 # Project configurations go BELOW here
 #
 #  CAREFUL: putting projects anywhere else than here, breaks 
@@ -148,11 +194,17 @@
 # - The first parameter is the filesystem folder to protect, relative to YOUR-WEBROOT/
 # - The second parameter is the LDAP/AD group that should be granted access
 # Note how full DNs are quite verbose...
-Use LdapProtectFullDN webroot-subdir-A LDAP-GROUP-A,OU=SOME-DEPARTMENT,OU=SOME-INSTITUTE,OU=USERS,dc=ad,dc=example,dc=com
+Use LdapProtectFullDN project-folder-A LDAP-GROUP-A,OU=SOME-DEPARTMENT,OU=SOME-INSTITUTE,OU=USERS,dc=ad,dc=example,dc=com
 
 # macro invocations for the groups in the common part of the hierarchy can be a lot shorter:
-Use LdapProtectCommonDN webroot-subdir-B LDAP-GROUP-B
-Use LdapProtectCommonDN webroot-subdir-B LDAP-GROUP-C
+Use LdapProtectCommonDN project-folder-B LDAP-GROUP-B
+Use LdapProtectCommonDN project-folder-C LDAP-GROUP-B
 # Note the mismatch! ------------------^------------^
 
+##############################################################
+# Access Cascade level 4: subgrouped projects
+#
+# the '$path' variable must repeat the group-folder that the project is part of.
+##############################################################
 
+Use LdapProtectCommonDN MACROED-PROJECT-GROUP/project-folder-D  LDAP-GROUP-D
