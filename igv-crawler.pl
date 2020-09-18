@@ -145,7 +145,8 @@ local $SIG{__WARN__} = sub {
   }
 };
 
-
+# According to PerlDoc this operation can be _exceedingly_ slow in some cases
+# Thus the recommandation to cache it like so.
 my $localTZ = DateTime::TimeZone->new( name => 'local' );
 
 # Actually do work :-)
@@ -422,7 +423,8 @@ sub clearOldLinksIn ($) {
   # - we scan dir_to_clear/* to make sure we don't accidentally delete the $dir_to_clear itself, in case it is empty
   system( "find -P '$dir_to_clear/*' -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
 
-  print "\t(took " . (DateTime->now(time_zone => $localTZ)->subtract_datetime_absolute($start)->seconds()) . " seconds)\n";
+  my $end =  DateTime->now(time_zone => $localTZ);
+  print "\t(took " . ($end->subtract_datetime_absolute($start)->seconds()) . " seconds)\n";
 }
 
 
@@ -591,7 +593,7 @@ sub findDatafilesToDisplay (%) {
     my @all_files_of_group = @{ $original{ $group_id }};
 
     # Special case: bams should only be included if they have an index
-	my @bams_having_indices = findBamfilesToDisplay(\@all_files_of_group);
+    my @bams_having_indices = findBamfilesToDisplay(\@all_files_of_group);
 
     # eleminate all index files from the list.
     #  - .bai (bam index)
@@ -788,7 +790,7 @@ sub printReportCommon ($) {
 
   print $fh "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
             "total groups displayed:                 $log_total_groups_displayed\n" .
-            "total files displayed:                  $log_total_files_displayed\n".
+            "total files displayed:                  $log_total_files_displayed\n" .
             "deepest directory scanned (from / ):    $log_deepest_scan_depth\n" .
             "deepest file found        (from / ):    $log_deepest_find_depth\n" .
             "shallowest file found     (from / ):    $log_shallowest_find_depth\n" .
