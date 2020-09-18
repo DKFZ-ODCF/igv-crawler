@@ -37,7 +37,6 @@ use strict;
 use warnings;
 use 5.010;
 
-use Date::Format;
 use DateTime;
 use File::stat;
 use File::Find::Rule;
@@ -147,6 +146,7 @@ local $SIG{__WARN__} = sub {
 };
 
 
+my $localTZ = DateTime::TimeZone->new( name => 'local' );
 
 # Actually do work :-)
 main();
@@ -256,9 +256,9 @@ sub main {
 
 
 sub crawl () {
-  my $start = time();
+  my $start = DateTime->now(time_zone => $localTZ);
 
-  print "\n" . time2str("%Y-%m-%d %H:%M:%S", $start) . " - Scanning $project_name for IGV-relevant files in:\n";
+  print "\n" . $start->strftime("%Y-%m-%d %H:%M:%S") . " - Scanning $project_name for IGV-relevant files in:\n";
   print "  $_ (expands to ${scan_dir_expansion_sizes{$_}} entries)\n" for @scan_dirs;
 
   my $rule = (
@@ -357,8 +357,8 @@ sub crawl () {
     }
   }
 
-  my $done_crawling = time();
-  print "    (took " . ($done_crawling - $start) . " seconds)\n";
+  my $done_crawling = DateTime->now(time_zone => $localTZ);
+  print "    (took " . ($done_crawling->subtract_datetime_absolute($start)->seconds()) . " seconds)\n";
 }
 
 
@@ -406,7 +406,7 @@ sub deriveGroupIdFrom ($) {
 sub clearOldLinksIn ($) {
   my ($dir_to_clear) = @_;
 
-  my $start = time();
+  my $start = DateTime->now(time_zone => $localTZ);;
 
   print "Clearing out links in $dir_to_clear";
 
@@ -422,7 +422,7 @@ sub clearOldLinksIn ($) {
   # - we scan dir_to_clear/* to make sure we don't accidentally delete the $dir_to_clear itself, in case it is empty
   system( "find -P '$dir_to_clear/*' -mount -depth -type d  -exec rmdir -p {} + 2> /dev/null" );
 
-  print "\t(took " . (time() - $start) . " seconds)\n";
+  print "\t(took " . (DateTime->now(time_zone => $localTZ)->subtract_datetime_absolute($start)->seconds()) . " seconds)\n";
 }
 
 
@@ -444,7 +444,7 @@ sub clearOldLinksIn ($) {
 sub makeAllFileSystemLinks ($%) {
   my ($public_link_dir, %files_per_group_id) = @_;
 
-  my $start = time();
+  my $start = DateTime->now(time_zone => $localTZ);
 
   print "creating links in     $public_link_dir";
 
@@ -468,7 +468,8 @@ sub makeAllFileSystemLinks ($%) {
     }
   }
 
-  print "\t(took " . (time() - $start) . " seconds)\n";
+  my $end =  DateTime->now(time_zone => $localTZ);
+  print "\t(took " . ($end->subtract_datetime_absolute($start)->seconds()) . " seconds)\n";
 }
 
 
@@ -537,7 +538,7 @@ sub getLinkNameFor ($$) {
 sub makeHtmlPage ($$$%) {
   my ($output_file, $file_host_dir, $project_name, %files_per_group_id) = @_;
 
-  my $start = time();
+  my $start = DateTime->now(time_zone => $localTZ);
 
   # Get the HTML template from this file's DATA section
   my $html = do { local $/; <DATA> };
@@ -557,7 +558,7 @@ sub makeHtmlPage ($$$%) {
   $template->param(
     project_name  => $project_name,
     contact_email => $siteconfig{'contact_email'},
-    timestamp     => time2str("%Y-%m-%d %H:%M:%S", time()),
+    timestamp     => $start->strftime("%Y-%m-%d %H:%M:%S"),
     file_host_dir => $file_host_dir,
     groups        => $formatted_groups,
     scandirs      => $formatted_scandirs
@@ -565,7 +566,8 @@ sub makeHtmlPage ($$$%) {
 
   writeContentsToFile($template->output(), $output_file);
 
-  print "\t(took " . (time() - $start) . " seconds)\n";
+  my $end = DateTime->now(time_zone => $localTZ);
+  print "\t(took " . ($end->subtract_datetime_absolute($start)->seconds()) . " seconds)\n";
 }
 
 
@@ -781,7 +783,7 @@ sub printReport () {
 sub printReportCommon ($) {
   my ($fh) = @_;
 
-  my $now  = DateTime->now;
+  my $now  = DateTime->now(time_zone => $localTZ);
   my $last_mod = DateTime->from_epoch( epoch => $log_last_modification_time);
 
   print $fh "total files scanned (excl. unreadable): $log_total_files_scanned\n" .
