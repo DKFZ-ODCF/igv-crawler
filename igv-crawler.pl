@@ -527,7 +527,7 @@ sub getLinkNameFor ($$) {
   # "U+2217 ASTERISK OPERATOR": ∗
   # IGV accepts that, and the displayed filename looks practically identical.
   # A hearty thank you to all programmers who implemented Unicode-support in browsers and IGV's shipped Java Runtime!
-  $basename =~ s/\*/∗/g
+  $basename =~ s/\*/∗/g;
 
   return catfile($group, $anti_clash_path, $basename);
 }
