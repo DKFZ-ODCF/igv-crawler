@@ -387,6 +387,7 @@ sub isSpecConformingVcf ($) {
 
   if (open(VCF, $maybe_vcf)) {
     my $header = chomp(<VCF>); # first line is enough
+    close(VCF);
     if ($header =~ /^##fileformat=VCFv/) { # e.g. "##fileformat=VCFv4.2"
       return 1;
     }
