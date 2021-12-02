@@ -357,6 +357,13 @@ sub crawl () {
 sub processCrawlHit ($) {
   my ($file) = @_;
 
+  # VCF need special handling, because we can't rely on the file-extension alone
+  # There exist 'true' VCF, conforming to the spec but
+  # also lots of 'quasi' VCF, using the file exension, having a semi-related content, but not fully compatible.
+  if ($file =~ /\.vcf$/ && !isSpecConformingVcf($file)) {
+    return; # skip further processing for quasi-VCF
+  }
+
   # store the match in our global hash
   addToIndex($file);
 
@@ -368,6 +375,22 @@ sub processCrawlHit ($) {
   if ($depth < $log_shallowest_find_depth) {
     $log_shallowest_find_depth = $depth;
   }
+}
+
+
+# Inspects the file contents to see if they match VCF-spec headers.
+# Specifically: checks if the first line opens with the required version-header.
+# See spec: https://samtools.github.io/hts-specs/VCFv4.2.pdf
+sub isSpecConformingVcf ($) {
+  my ($maybe_vcf) = @_;
+
+  open(VCF, $maybe_vcf) or die "couldn't open $maybe_vcf for spec-conforming check.";
+  my $header = chomp(<VCF>); # first line is enough
+  if ($header =~ /^##fileformat=VCFv/) { # e.g. "##fileformat=VCFv4.2"
+    return 1;
+  }
+
+  return 0;
 }
 
 
