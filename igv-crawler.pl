@@ -345,21 +345,29 @@ sub crawl () {
   # iterate over matching files
   $rule = $rule->start( @globbed_scan_dirs );
   while (defined ( my $matching_file = $rule->match )) {
-    # store the match in our global hash
-    addToIndex($matching_file);
-
-    # update the depth-range where we find stuff
-    my $depth = $matching_file =~ tr/\//\//;
-    if ($depth > $log_deepest_find_depth) {
-      $log_deepest_find_depth = $depth;
-    }
-    if ($depth < $log_shallowest_find_depth) {
-      $log_shallowest_find_depth = $depth;
-    }
+    processCrawlHit($matching_file);
   }
 
   my $done_crawling = DateTime->now(time_zone => $localTZ);
   print "    (took " . ($done_crawling->subtract_datetime_absolute($start)->seconds()) . " seconds)\n";
+}
+
+
+# Store a crawled file for later inspection and processing.
+sub processCrawlHit ($) {
+  my ($file) = @_;
+
+  # store the match in our global hash
+  addToIndex($file);
+
+  # update the depth-range where we find stuff
+  my $depth = $file =~ tr/\//\//;
+  if ($depth > $log_deepest_find_depth) {
+    $log_deepest_find_depth = $depth;
+  }
+  if ($depth < $log_shallowest_find_depth) {
+    $log_shallowest_find_depth = $depth;
+  }
 }
 
 
