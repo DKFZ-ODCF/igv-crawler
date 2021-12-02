@@ -104,6 +104,7 @@ my @log_symlink_clashes;          # log if we encounter files that map to the sa
 my @log_ungroupable_paths;        # paths that we couldn't group, because the grouping regex didn't apply
 my @log_files_without_indices;    # files we had to filter out due to missing indices
 my @log_unreadable_paths;         # paths that File::find couldn't enter due to permission problems
+my @log_untastable_vcf;           # VCF files that we couldn't open for inspection
 my %log_unreadable_summary;       # Hash that has the final subdir of all unreadable paths, and their occurance count. Allows identification of recurring permission problems, e.g. tool-generated "screenshots/"
 #####################################################################################
 
@@ -384,10 +385,13 @@ sub processCrawlHit ($) {
 sub isSpecConformingVcf ($) {
   my ($maybe_vcf) = @_;
 
-  open(VCF, $maybe_vcf) or die "couldn't open $maybe_vcf for spec-conforming check.";
-  my $header = chomp(<VCF>); # first line is enough
-  if ($header =~ /^##fileformat=VCFv/) { # e.g. "##fileformat=VCFv4.2"
-    return 1;
+  if (open(VCF, $maybe_vcf)) {
+    my $header = chomp(<VCF>); # first line is enough
+    if ($header =~ /^##fileformat=VCFv/) { # e.g. "##fileformat=VCFv4.2"
+      return 1;
+    }
+  } else { # couldn't inspect the file, which isn't critical, but worth logging.
+    push @log_untastable_vcf, $maybe_vcf;
   }
 
   return 0;
@@ -840,7 +844,8 @@ sub printShortReport () {
   print "ungroupable paths:                      " . scalar @log_ungroupable_paths      . "\n" .
         "files without index:                    " . scalar @log_files_without_indices  . "\n" .
         "symlink clashes:                        " . scalar @log_symlink_clashes        . "\n" .
-        "unreadable paths:                       " . scalar @log_unreadable_paths       . "\n";
+        "unreadable paths:                       " . scalar @log_unreadable_paths       . "\n" .
+        "untastable VCFs:                        " . scalar @log_untastable_vcf         . "\n";
 
   print "unparseable paths:                      " . scalar @log_undisplayable_paths    . "\n" if $display_mode eq 'regex';
 }
@@ -855,6 +860,7 @@ sub printLongReport ($) {
   printWithHeader($fh, "files without index",    \@log_files_without_indices);
   printWithHeader($fh, "symlink name clashes",   \@log_symlink_clashes);
   printWithHeader($fh, "unreadable paths",       \@log_unreadable_paths);
+  printWithHeader($fh, "untastable VCFs",        \@log_untastable_vcf);
 
   my @parsed_unreadable_summary = map {
       $log_unreadable_summary{$_} > 1 ?
