@@ -326,6 +326,7 @@ sub crawl () {
         '*.loh',
         '*.maf',
         '*.mut',
+        '*.muts.vcf',
         '*.psl',
         '*.res',
         '*.seg',
