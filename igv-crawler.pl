@@ -828,6 +828,7 @@ sub printShortReport () {
 sub printLongReport ($) {
   my ($fh) = @_;
 
+  print $fh "project:$project_name\n";
   printReportCommon($fh);
 
   printWithHeader($fh, "ungroupable paths",      \@log_ungroupable_paths);
