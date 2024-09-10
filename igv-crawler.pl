@@ -954,7 +954,7 @@ Jump to:
     <li>you enabled port-control (in view > preferences > advanced > enable port > port 60151, activated by default)</li>
     <li>you have the correct reference genome loaded before clicking the link.<br/>
       (do this before loading files, or all positions will show up as mutated)<br/>
-      to add missing genomes to IGV, see menu > genomes > load genome from server<br/></li>
+      to add missing genomes to IGV, see menu > genomes > select hosted genome<br/></li>
   </ol>
 </p>
 
