@@ -1,5 +1,8 @@
 # IGV Crawler
 
+> ⚠️ **Notice:**  
+> *This software is for research-use only!*
+
 The IGV crawler gives you an organised view of your bioinformatics project, with one-click visualization of your data in the
 Broad institute's **Integrative Genome Viewer** ([IGV](https://www.broadinstitute.org/software/igv/)).
 
